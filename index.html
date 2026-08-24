@@ -1234,12 +1234,13 @@ window.NOHUT_BULUT = {
 
   window.Kilit = {
     gerekli: function () {
-      if (!window.NOHUT_SIFRE_OZETI) return false;          // kilit kurulmamış
-      if (!/^https?:/.test(location.protocol)) return false; // yerel dosya
-      // Kendi bilgisayarındaki uygulama şifre sormaz: kilit, yayınlanan
-      // kopya içindir. Bu makineye erişebilen zaten veri dosyasına da erişir.
-      if (/^(127\.0\.0\.1|localhost|\[::1\])$/.test(location.hostname)
-          && !(window.Cozum && window.Cozum.var())) return false;
+      // Bu kilit YALNIZCA sayfaya gömülü şifreli kopya için vardır:
+      // orada şifre, verinin çözme anahtarıdır. Kayıtlar bulutta
+      // tutulduğunda güvenliği Supabase girişi sağlar; ikinci bir
+      // şifre sormanın anlamı yok.
+      if (!(window.Cozum && window.Cozum.var())) return false;
+      if (!window.NOHUT_SIFRE_OZETI) return false;
+      if (!/^https?:/.test(location.protocol)) return false;
       if (!(window.crypto && crypto.subtle)) return false;   // özet alınamıyor
       // Şifreli kopyada şifre AYNI ZAMANDA çözme anahtarıdır;
       // hatırlamakla olmaz, her açılışta sorulmalı.
