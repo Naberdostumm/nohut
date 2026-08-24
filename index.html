@@ -614,6 +614,166 @@ td.negatif { color: var(--eksi); font-weight: 570; }
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--vurgu) 20%, transparent);
 }
 .kilit-hata { color: var(--eksi); font-size: 13px; font-weight: 550; min-height: 20px; margin: 9px 0 4px; }
+
+/* ---------- gider giriş şekli (kg / ton / götürü) ---------- */
+.gider-tip { display: flex; gap: 3px; background: var(--cizgi2); padding: 3px;
+  border-radius: 9px; margin-bottom: 9px; }
+.gider-tip label { flex: 1; cursor: pointer; }
+.gider-tip input { position: absolute; opacity: 0; width: 1px; height: 1px; margin: 0; }
+.gider-tip span {
+  display: block; text-align: center; padding: 8px 4px; border-radius: 7px;
+  font-size: 12.5px; font-weight: 570; color: var(--metin2); white-space: nowrap;
+}
+.gider-tip input:checked + span {
+  background: var(--kart); color: var(--vurgu); box-shadow: var(--golge);
+}
+.gider-tip label:focus-within span { box-shadow: 0 0 0 2px var(--vurgu); }
+
+/* ---------- yeni sürüm şeridi ---------- */
+.guncelleme-serit {
+  position: fixed; left: 50%; transform: translateX(-50%);
+  top: calc(8px + env(safe-area-inset-top)); z-index: 300;
+  display: flex; align-items: center; gap: 12px;
+  background: var(--vurgu); color: #fff; padding: 9px 10px 9px 16px;
+  border-radius: 100px; box-shadow: var(--golge-buyuk);
+  font-size: 13.5px; font-weight: 560; max-width: 92vw;
+}
+[data-tema="koyu"] .guncelleme-serit { color: #16150f; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-tema="acik"]) .guncelleme-serit { color: #16150f; }
+}
+.guncelleme-serit button {
+  border: 0; border-radius: 100px; padding: 6px 14px; cursor: pointer;
+  background: rgba(255,255,255,.25); color: inherit;
+  font: inherit; font-weight: 650; white-space: nowrap;
+}
+
+/* ---------- 8mm altı kalite satırları (eleme formunda) ---------- */
+.kalite-satir { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.kalite-satir .kalite-ad {
+  flex: 1; min-width: 0; padding: 10px 12px; border: 1px solid var(--cizgi);
+  border-radius: 10px; background: var(--kart2); color: var(--metin);
+  font-size: 15px; font-family: inherit; min-height: 44px;
+}
+.kalite-satir .kalite-kg { flex: 0 0 118px; }
+.kalite-satir .kalite-kg input {
+  width: 100%; padding: 10px 34px 10px 12px; border: 1px solid var(--cizgi);
+  border-radius: 10px; background: var(--kart2); color: var(--metin);
+  font-size: 15px; font-family: inherit; min-height: 44px;
+}
+.kalite-satir input:focus {
+  outline: none; border-color: var(--vurgu);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--vurgu) 18%, transparent);
+}
+.kalite-satir .kalite-sil { flex: 0 0 30px; height: 30px; }
+select.kalite-sec {
+  flex: 1; min-width: 0; padding: 10px 12px; border: 1px solid var(--cizgi);
+  border-radius: 10px; background: var(--kart2); color: var(--metin);
+  font-size: 15px; font-family: inherit; min-height: 44px; font-weight: 550;
+}
+
+/* ============================================================
+   BASKI / PDF
+   Ekranda gizli durur; yazdırırken uygulama gizlenir, belge çıkar.
+   Kağıt beyaz olduğu için renkler her koşulda siyah-beyaz sabitlenir.
+   ============================================================ */
+#basim { display: none; }
+
+@media print {
+  body { padding: 0 !important; background: #fff !important; }
+  body > *:not(#basim) { display: none !important; }
+  #basim { display: block !important; }
+  .perde, .gezinme, .tepe, .bildirim, .guncelleme-serit { display: none !important; }
+
+  @page { size: A4; margin: 14mm 12mm; }
+
+  #basim, #basim * {
+    color: #000 !important; background: transparent !important;
+    box-shadow: none !important; -webkit-print-color-adjust: exact;
+  }
+  #basim {
+    font: 10pt/1.45 -apple-system, "Helvetica Neue", Arial, sans-serif;
+    font-variant-numeric: tabular-nums;
+  }
+  .b-tepe {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    border-bottom: 2px solid #000; padding-bottom: 8px; margin-bottom: 14px;
+  }
+  .b-firma { font-size: 9pt; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+  .b-tepe h1 { font-size: 16pt; margin: 2px 0 0; font-weight: 700; }
+  .b-alt { font-size: 9.5pt; margin-top: 3px; }
+  .b-tarih { font-size: 8.5pt; white-space: nowrap; padding-top: 4px; }
+
+  #basim h2 {
+    font-size: 10.5pt; font-weight: 700; margin: 16px 0 6px;
+    border-bottom: 1px solid #000; padding-bottom: 3px;
+    break-after: avoid; page-break-after: avoid;
+  }
+  .b-not { font-size: 9pt; margin: 4px 0 8px; font-style: italic; }
+  .soluk { font-weight: 400; font-size: 8.5pt; }
+
+  .b-kutular { display: flex; flex-wrap: wrap; gap: 0; margin-bottom: 8px;
+    border: 1px solid #000; }
+  .b-kutu { flex: 1 1 22%; min-width: 110px; padding: 7px 9px;
+    border-right: 1px solid #000; }
+  .b-kutu:last-child { border-right: 0; }
+  .b-kutu .e { font-size: 7.5pt; text-transform: uppercase; letter-spacing: .05em; }
+  .b-kutu .d { font-size: 13pt; font-weight: 700; margin-top: 2px; }
+  .b-kutu .a { font-size: 8pt; margin-top: 1px; }
+
+  table.b-tablo { width: 100%; border-collapse: collapse; margin-bottom: 6px;
+    font-size: 9pt; break-inside: auto; }
+  .b-tablo th, .b-tablo td {
+    border: 1px solid #000; padding: 4px 6px; text-align: right; white-space: nowrap;
+  }
+  .b-tablo th { font-size: 8pt; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .03em; background: #eee !important; }
+  .b-tablo th.sol, .b-tablo td.sol { text-align: left; white-space: normal; }
+  .b-tablo tr { break-inside: avoid; page-break-inside: avoid; }
+  .b-tablo thead { display: table-header-group; }
+
+  .b-vurgu { border: 2px solid #000; padding: 10px 12px; margin: 14px 0;
+    break-inside: avoid; page-break-inside: avoid; }
+  .b-vurgu .e { font-size: 8pt; font-weight: 700; letter-spacing: .08em; }
+  .b-vurgu .d { font-size: 22pt; font-weight: 700; margin: 3px 0; }
+  .b-vurgu .a { font-size: 8.5pt; }
+
+  .b-uyari { border: 1px solid #000; padding: 7px 10px; margin-top: 12px; font-size: 9pt; }
+  .b-dip { margin-top: 18px; padding-top: 6px; border-top: 1px solid #000;
+    font-size: 7.5pt; text-align: center; }
+}
+
+/* Yazdırma anında ekranı da hazırla (bazı tarayıcılar için) */
+body.basiliyor > *:not(#basim) { visibility: hidden; }
+body.basiliyor #basim { display: block; visibility: visible; }
+
+/* ---------- rapor dönem seçimi ---------- */
+.donem-izgara { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 4px; }
+.donem-dugme {
+  padding: 13px 10px; border: 1px solid var(--cizgi); border-radius: 11px;
+  background: var(--kart); color: var(--metin); font-family: inherit;
+  font-size: 14.5px; font-weight: 570; cursor: pointer; min-height: 48px;
+}
+.donem-dugme:active { transform: scale(.985); }
+.donem-dugme.secili {
+  border-color: var(--vurgu); background: var(--vurgu-ac); color: var(--vurgu);
+}
+.donem-dugme:last-child:nth-child(odd) { grid-column: 1 / -1; }
+
+@media print {
+  .b-donem { font-weight: 700; }
+}
+
+/* ---------- satışın partilere dağılımı ---------- */
+.dagilim-satir {
+  display: flex; align-items: center; gap: 10px; padding: 7px 0;
+  border-bottom: 1px dashed var(--cizgi2); font-size: 13.5px;
+}
+.dagilim-satir:last-child { border-bottom: 0; }
+.dagilim-satir .d-parti { font-weight: 620; min-width: 76px; }
+.dagilim-satir .d-kalite { flex: 1; color: var(--metin2); min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dagilim-satir .d-kg { font-weight: 620; font-variant-numeric: tabular-nums; white-space: nowrap; }
 </style>
 </head>
 <body>
@@ -865,6 +1025,12 @@ window.NOHUT_TUZ = 'nohut-ithalat-takip-v1';
     dizi(veri.altSatislar).forEach(function (a) {
       olaylar.push({ tur: 'altSatis', tarih: a.tarih, kayit: a });
     });
+    dizi(veri.hamSatislar).forEach(function (a) {
+      olaylar.push({ tur: 'hamSatis', tarih: a.tarih, kayit: a });
+    });
+    dizi(veri.genelGiderler).forEach(function (g) {
+      olaylar.push({ tur: 'genelGider', tarih: g.tarih, kayit: g });
+    });
 
     olaylar = tariheGore(olaylar);
 
@@ -959,6 +1125,42 @@ window.NOHUT_TUZ = 'nohut-ithalat-takip-v1';
           tarih: k.tarih, tur: 'Eleme ücreti',
           aciklama: 'Eleme — ' + (k.partiKod || ''),
           giren: 0, cikan: et, usd: -re.usd, kur: re.kur
+        };
+
+      } else if (o.tur === 'genelGider') {
+        // Seyahat/işletme gideri: kasadan çıkar ama HİÇBİR PARTİNİN
+        // maliyetine binmez. Otel, uçak, yeme içme malın maliyeti değildir.
+        if (k.paraBirimi === 'USD') {
+          usdDegeri['genelGider:' + k.id] = S(k.tutar);
+          satir = {
+            tarih: k.tarih, tur: 'Genel gider (USD)',
+            aciklama: (k.kategori || 'Genel gider') + (k.aciklama ? ' — ' + k.aciklama : ''),
+            giren: 0, cikan: 0, usd: -S(k.tutar), kur: 0
+          };
+        } else {
+          var gt = S(k.tutar);
+          var rg = cikis(gt);
+          usdDegeri['genelGider:' + k.id] = rg.usd;
+          satir = {
+            tarih: k.tarih, tur: 'Genel gider',
+            aciklama: (k.kategori || 'Genel gider') + (k.aciklama ? ' — ' + k.aciklama : ''),
+            giren: 0, cikan: gt, usd: -rg.usd, kur: rg.kur
+          };
+        }
+
+      } else if (o.tur === 'hamSatis') {
+        // Elenmemiş ham nohudun İran içinde satışı — Tümen kasaya geri girer
+        var ht = S(k.tutar);
+        var hkur = ortKur();
+        var hUsd = hkur > 0 ? ht / hkur : 0;
+        bakiye += ht;
+        usdKarsilik += hUsd;
+        usdDegeri['hamSatis:' + k.id] = hUsd;
+        satir = {
+          tarih: k.tarih, tur: 'Ham satış',
+          aciklama: S(k.kg).toLocaleString('tr-TR') + ' kg elenmemiş' +
+                    (k.alici ? ' — ' + k.alici : ''),
+          giren: ht, cikan: 0, usd: hUsd, kur: hkur
         };
 
       } else if (o.tur === 'altSatis') {
@@ -1060,11 +1262,12 @@ window.NOHUT_TUZ = 'nohut-ithalat-takip-v1';
     });
 
     /* --- eleme ücretleri --- */
-    var elemeler = dizi(veri.elemeler).filter(function (e) { return e.partiId === p.id; });
+    var elemeler = Hesap.partiElemeleri(veri, p.id);
     var elemeUcretT = 0, elemeUcretU = 0;
     elemeler.forEach(function (e) {
-      elemeUcretT += S(e.ucret);
-      elemeUcretU += S(uD['eleme:' + e.id]);
+      var pay = Hesap.elemePayi(e, p.id);
+      elemeUcretT += S(e.ucret) * pay;
+      elemeUcretU += S(uD['eleme:' + e.id]) * pay;
     });
     if (elemeUcretT > 0 || elemeUcretU > 0) {
       katT['Eleme ücreti'] = (katT['Eleme ücreti'] || 0) + elemeUcretT;
@@ -1081,27 +1284,77 @@ window.NOHUT_TUZ = 'nohut-ithalat-takip-v1';
     /* --- eleme sonuçları --- */
     var girenKg = 0, ustKg = 0, altKg = 0, fireKg = 0, elemedeKg = 0;
     elemeler.forEach(function (e) {
-      girenKg += S(e.girenKg);
+      var pay = Hesap.elemePayi(e, p.id);
+      // Bu partinin o elemeye koyduğu kilo (paylaştırma değil, gerçek)
+      var bendenGiren = 0;
+      Hesap.elemeGirdileri(e).forEach(function (x) {
+        if (x.partiId === p.id) bendenGiren += x.girenKg;
+      });
+      girenKg += bendenGiren;
       if (e.tamamlandi === false) {
-        elemedeKg += S(e.girenKg);
+        elemedeKg += bendenGiren;
       } else {
-        ustKg += S(e.ustKg);
-        altKg += S(e.altKg);
-        fireKg += S(e.fireKg);
+        // Çıktılar giren kilo oranında paylaşılır — mallar karıştı
+        ustKg += S(e.ustKg) * pay;
+        altKg += S(e.altKg) * pay;
+        fireKg += S(e.fireKg) * pay;
       }
+    });
+
+    /* --- ham satışlar: elenmeden İran'da satılan mal --- */
+    var hamSatilanKg = 0, hamGelirT = 0, hamGelirU = 0;
+    dizi(veri.hamSatislar).forEach(function (h) {
+      if (h.partiId !== p.id) return;
+      hamSatilanKg += S(h.kg);
+      hamGelirT += S(h.tutar);
+      hamGelirU += S(uD['hamSatis:' + h.id]);
     });
 
     /* --- 8mm altı satışları (mahsup) --- */
     var altSatilanKg = 0, altGelirT = 0, altGelirU = 0;
     dizi(veri.altSatislar).forEach(function (a) {
-      if (a.partiId !== p.id) return;
-      altSatilanKg += S(a.kg);
-      altGelirT += S(a.tutar);
-      altGelirU += S(uD['altSatis:' + a.id]);
+      var pay = Hesap.satisPayi(a, p.id);
+      if (pay.kg <= 0 && pay.tutar <= 0) return;
+      altSatilanKg += pay.kg;
+      altGelirT += pay.tutar;
+      // Kaydın USD karşılığı, partilere tutar oranında bölünür
+      var kayitToplam = S(a.tutar);
+      var oran = kayitToplam > 0 ? pay.tutar / kayitToplam : 0;
+      altGelirU += S(uD['altSatis:' + a.id]) * oran;
     });
 
-    var netT = giderT - altGelirT;
-    var netU = giderU - altGelirU;
+    var elenenKg = girenKg - elemedeKg;   // sonucu girilmiş, tamamlanan eleme
+
+    /* ------------------------------------------------------------
+       MALİYETİN PAYLAŞTIRILMASI
+
+       Alım bedeli ve genel masraflar partinin TAMAMI için yapıldı.
+       Bunları kiloya göre bölmek gerekir; yoksa:
+         • ham satılan mal maliyetsiz görünür,
+         • henüz elenmemiş mal da 8mm+ maliyetini şişirir.
+
+       Eleme ücreti yalnızca elenen kısma, 8mm altı geliri de yalnızca
+       elenen kısma aittir — onlar paylaştırılmaz.
+       ------------------------------------------------------------ */
+    var temelKg = S(p.hamKg);
+    var pay = temelKg > 0 ? elenenKg / temelKg : (elenenKg > 0 ? 1 : 0);
+    var hamPay = temelKg > 0 ? hamSatilanKg / temelKg : 0;
+
+    // Paylaştırmaya girmeyen kalemler (yalnızca elenen kısma ait)
+    var elemeT = katT['Eleme ücreti'] || 0;
+    var elemeU = katU['Eleme ücreti'] || 0;
+    var genelT = giderT - elemeT;      // alım + diğer masraflar
+    var genelU = giderU - elemeU;
+
+    var hamMaliyetT = genelT * hamPay;
+    var hamMaliyetU = genelU * hamPay;
+
+    var netT = genelT * pay + elemeT - altGelirT;
+    var netU = genelU * pay + elemeU - altGelirU;
+
+    // Elde kalan (satılmamış, elenmemiş) malın taşıdığı maliyet
+    var kalanPay = Math.max(0, 1 - pay - hamPay);
+    var kalanMaliyetT = genelT * kalanPay;
 
     /* --- sevkiyat --- */
     var yuklenenKg = 0;
@@ -1112,7 +1365,6 @@ window.NOHUT_TUZ = 'nohut-ithalat-takip-v1';
     });
 
     /* --- birim maliyet --- */
-    var elenenKg = girenKg - elemedeKg;   // sonucu girilmiş, tamamlanan eleme
     var birimT = ustKg > 0 ? netT / ustKg : 0;
     var birimU = ustKg > 0 ? netU / ustKg : 0;
     var usdTon = birimU * 1000;
@@ -1121,12 +1373,22 @@ window.NOHUT_TUZ = 'nohut-ithalat-takip-v1';
       parti: p,
       kalemler: kalemler,
       giderTumen: giderT, giderUsd: giderU,
+      genelGiderTumen: genelT, genelGiderUsd: genelU,
+      elemeUcretTumen: elemeT, elemeUcretUsd: elemeU,
       altGelirTumen: altGelirT, altGelirUsd: altGelirU, altSatilanKg: altSatilanKg,
       netTumen: netT, netUsd: netU,
+      kalanMaliyetTumen: kalanMaliyetT,
+      paylastirmaVar: (hamPay > 0.0001 || pay < 0.9999),
       hamKg: S(p.hamKg),
       girenKg: girenKg,
       elenenKg: elenenKg,
-      elenmemisKg: S(p.hamKg) - girenKg,
+      hamSatilanKg: hamSatilanKg,
+      hamGelirTumen: hamGelirT, hamGelirUsd: hamGelirU,
+      hamSatisMaliyetTumen: hamMaliyetT, hamSatisMaliyetUsd: hamMaliyetU,
+      hamSatisKarTumen: hamGelirT - hamMaliyetT,
+      hamSatisKarUsd: hamGelirU - hamMaliyetU,
+      elenmemisKg: S(p.hamKg) - girenKg - hamSatilanKg,
+      elenenPay: pay,
       elemedeKg: elemedeKg,
       ustKg: ustKg, altKg: altKg, fireKg: fireKg,
       randiman: elenenKg > 0 ? ustKg / elenenKg : 0,
@@ -1140,6 +1402,7 @@ window.NOHUT_TUZ = 'nohut-ithalat-takip-v1';
       altStokKg: altKg - altSatilanKg,
       yuklenenKg: yuklenenKg,
       tamam: ustKg > 0,
+      altKaliteler: Hesap.altKaliteler(veri, partiId),
       giderDurumu: Hesap.giderDurumu(veri, partiId, kasa)
     };
   };
@@ -1211,6 +1474,45 @@ window.NOHUT_TUZ = 'nohut-ithalat-takip-v1';
 
   Hesap.VARSAYILAN_ZORUNLU = ['Nakliye', 'Hammaliye / işçilik', 'Çuval / big bag', 'Eleme ücreti'];
 
+  /* ------------------------------------------------------------
+     GİDER GİRİŞ ŞEKLİ
+
+     Aynı gider farklı şekillerde anlaşılır:
+       kg     → kilo başına fiyat   (eleme genelde böyle)
+       ton    → ton başına fiyat    (nakliye genelde böyle)
+       goturu → işin tamamı için tek fiyat (pazarlıkla)
+
+     Kayıtta her zaman TOPLAM tutar saklanır; giriş şekli ve birim
+     fiyat da saklanır ki düzenlerken aynı şekilde geri gelsin.
+     ------------------------------------------------------------ */
+
+  Hesap.GIDER_TIPLERI = [
+    { deger: 'kg',     ad: 'Kilo başına', birim: 'T/kg' },
+    { deger: 'ton',    ad: 'Ton başına',  birim: 'T/ton' },
+    { deger: 'goturu', ad: 'Götürü',      birim: 'T' }
+  ];
+
+  // Girilen birim fiyattan toplam tutarı hesaplar
+  Hesap.giderTutari = function (tip, birimFiyat, kg) {
+    var f = S(birimFiyat), m = S(kg);
+    if (tip === 'kg') return f * m;
+    if (tip === 'ton') return f * m / 1000;
+    return f;                                  // götürü
+  };
+
+  // Toplam tutardan, seçili giriş şekline göre birim fiyatı geri hesaplar
+  Hesap.giderBirimi = function (tip, tutar, kg) {
+    var t = S(tutar), m = S(kg);
+    if (tip === 'kg') return m > 0 ? t / m : 0;
+    if (tip === 'ton') return m > 0 ? t / m * 1000 : 0;
+    return t;
+  };
+
+  Hesap.giderBirimiAdi = function (tip) {
+    var k = Hesap.GIDER_TIPLERI.find(function (x) { return x.deger === tip; });
+    return k ? k.birim : 'T';
+  };
+
   Hesap.zorunluListesi = function (veri) {
     var a = (veri.ayarlar || {}).zorunluGiderler;
     return Array.isArray(a) ? a : Hesap.VARSAYILAN_ZORUNLU;
@@ -1225,14 +1527,18 @@ window.NOHUT_TUZ = 'nohut-ithalat-takip-v1';
     if (!p) return null;
 
     var zorunlu = Hesap.zorunluListesi(veri);
-    var elemeler = dizi(veri.elemeler).filter(function (e) { return e.partiId === partiId; });
+    var elemeler = Hesap.partiElemeleri(veri, partiId);
 
     var satirlar = Hesap.GIDER_KATEGORILERI.map(function (kat) {
       var tumen = 0, usd = 0, adet = 0, paylasimli = false, tekKayit = null;
 
       if (kat.kaynak === 'eleme') {
         elemeler.forEach(function (e) {
-          if (S(e.ucret) > 0) { adet++; tumen += S(e.ucret); usd += S(kasa.usdDegeri['eleme:' + e.id]); }
+          if (S(e.ucret) <= 0) return;
+          var pay = Hesap.elemePayi(e, partiId);
+          adet++;
+          tumen += S(e.ucret) * pay;
+          usd += S(kasa.usdDegeri['eleme:' + e.id]) * pay;
         });
       } else {
         dizi(veri.masraflar).forEach(function (m) {
@@ -1261,6 +1567,7 @@ window.NOHUT_TUZ = 'nohut-ithalat-takip-v1';
         tumen: tumen, usd: usd, adet: adet, durum: durum, paylasimli: paylasimli,
         kayitId: adet === 1 && tekKayit ? tekKayit.id : null,
         paraBirimi: adet === 1 && tekKayit ? (tekKayit.paraBirimi || 'TMN') : 'TMN',
+        tutarTipi: adet === 1 && tekKayit ? (tekKayit.tutarTipi || 'goturu') : 'goturu',
         // tek ve yalnız bu partiye ait masraf tek alandan düzenlenebilir
         duzenlenebilir: kat.kaynak === 'masraf' && adet <= 1 && !paylasimli
       };
@@ -1272,6 +1579,226 @@ window.NOHUT_TUZ = 'nohut-ithalat-takip-v1';
       bekleyenler: satirlar.filter(function (r) { return r.durum === 'beklemede'; }),
       tamam: !satirlar.some(function (r) { return r.durum === 'eksik'; })
     };
+  };
+
+  /* ============================================================
+     8MM ALTI KALİTELERİ
+
+     Elek altı tek tip olmayabilir: 1. kalite, 2. kalite, kırık…
+     Her biri ayrı fiyattan satılır. Eleme kaydında kalite satırlarına
+     ayrılır, satışta her kalite kendi fiyatıyla girilir.
+
+     altKg ve satış tutarı her zaman TOPLAM olarak saklanır; maliyet
+     hesabı bundan etkilenmez, kaliteler yalnızca kırılım sağlar.
+     ============================================================ */
+
+  /* ------------------------------------------------------------
+     ÇOK PARTİLİ ELEME
+
+     Birkaç partinin malı birlikte elenebilir. Karıştıktan sonra
+     hangi partinin ne verdiği ölçülemez; bu yüzden çıktılar (8mm+,
+     8mm−, fire) ve eleme ücreti GİREN KİLO ORANINDA paylaştırılır.
+     Dürüst olan budur — uydurma kesinlik üretmez.
+     ------------------------------------------------------------ */
+
+  // Eleme kaydının parti satırları (eski tek partili kayıtlar çevrilir)
+  Hesap.elemeGirdileri = function (e) {
+    var g = dizi(e.partiler);
+    if (!g.length) {
+      return e.partiId ? [{ partiId: e.partiId, girenKg: S(e.girenKg) }] : [];
+    }
+    return g.map(function (x) {
+      return { partiId: x.partiId, girenKg: S(x.girenKg) };
+    });
+  };
+
+  // Bir elemenin belirli partiye düşen payı (0–1)
+  Hesap.elemePayi = function (e, partiId) {
+    var girdiler = Hesap.elemeGirdileri(e);
+    var toplam = 0, bu = 0;
+    girdiler.forEach(function (x) {
+      toplam += x.girenKg;
+      if (x.partiId === partiId) bu += x.girenKg;
+    });
+    if (bu <= 0) return 0;
+    return toplam > 0 ? bu / toplam : 0;
+  };
+
+  // Bu partiye ait olan elemeler
+  Hesap.partiElemeleri = function (veri, partiId) {
+    return dizi(veri.elemeler).filter(function (e) {
+      return Hesap.elemeGirdileri(e).some(function (x) { return x.partiId === partiId; });
+    });
+  };
+
+  var KALITESIZ = 'Ayrılmamış';
+
+  Hesap.KALITESIZ = KALITESIZ;
+
+  // Eleme kaydındaki kalite satırları (eski kayıtlar tek satıra çevrilir)
+  Hesap.altKalemleri = function (e) {
+    var k = dizi(e.altKalemler);
+    if (k.length) return k;
+    return S(e.altKg) > 0 ? [{ ad: KALITESIZ, kg: S(e.altKg) }] : [];
+  };
+
+  /* Satış kaydındaki kalite satırları.
+     Bir satış birden çok partiye dağılabilir; her kalem kendi partisini
+     taşır. Eski kayıtlarda kalem partisi yoksa kaydın partisi kullanılır. */
+  Hesap.satisKalemleri = function (a) {
+    var k = dizi(a.kalemler);
+    if (!k.length) {
+      k = [{ ad: a.kalite || KALITESIZ, kg: S(a.kg),
+             birimFiyat: S(a.birimFiyat), tutar: S(a.tutar) }];
+    }
+    return k.map(function (x) {
+      return {
+        partiId: x.partiId || a.partiId,
+        ad: x.ad || KALITESIZ,
+        kg: S(x.kg), birimFiyat: S(x.birimFiyat), tutar: S(x.tutar)
+      };
+    });
+  };
+
+  /* Bir satış kaydının belirli bir partiye düşen payı */
+  Hesap.satisPayi = function (a, partiId) {
+    var kg = 0, tutar = 0;
+    Hesap.satisKalemleri(a).forEach(function (x) {
+      if (x.partiId === partiId) { kg += x.kg; tutar += x.tutar; }
+    });
+    return { kg: kg, tutar: tutar };
+  };
+
+  /* Bir partide kalite bazında 8mm altı durumu */
+  Hesap.altKaliteler = function (veri, partiId) {
+    var harita = {};
+    function kutu(ad) {
+      ad = (ad || KALITESIZ).trim() || KALITESIZ;
+      if (!harita[ad]) harita[ad] = { ad: ad, cikanKg: 0, satilanKg: 0, gelirT: 0 };
+      return harita[ad];
+    }
+
+    dizi(veri.elemeler).forEach(function (e) {
+      if (e.tamamlandi === false) return;
+      var pay = Hesap.elemePayi(e, partiId);
+      if (pay <= 0) return;
+      Hesap.altKalemleri(e).forEach(function (k) {
+        kutu(k.ad).cikanKg += S(k.kg) * pay;
+      });
+    });
+
+    dizi(veri.altSatislar).forEach(function (a) {
+      Hesap.satisKalemleri(a).forEach(function (k) {
+        if (k.partiId !== partiId) return;
+        var b = kutu(k.ad);
+        b.satilanKg += k.kg;
+        b.gelirT += k.tutar;
+      });
+    });
+
+    return Object.keys(harita).map(function (ad) {
+      var b = harita[ad];
+      b.kalanKg = b.cikanKg - b.satilanKg;
+      b.ortFiyat = b.satilanKg > 0 ? b.gelirT / b.satilanKg : 0;
+      return b;
+    }).sort(function (x, y) { return y.cikanKg - x.cikanKg; });
+  };
+
+  /* ------------------------------------------------------------
+     8MM ALTI STOK HAVUZU
+
+     Birkaç partinin elek altı birlikte satılabilir. Havuz, kalite
+     adına göre tüm partileri toplar; satış eskiden yeniye (FIFO)
+     dağıtılır — önce en eski partinin stoğu erir.
+     ------------------------------------------------------------ */
+
+  Hesap.altStokHavuzu = function (veri, harictSatisId) {
+    var partiler = Hesap.partiListesi(veri).slice().sort(function (a, b) {
+      return String(a.tarih || '').localeCompare(String(b.tarih || ''));   // eskiden yeniye
+    });
+    var havuz = {};
+
+    partiler.forEach(function (p) {
+      var kal = Hesap.altKaliteler(veri, p.id);
+      kal.forEach(function (x) {
+        var kalan = x.kalanKg;
+        // Düzenlenen satışın kendi miktarı stoğa geri sayılır
+        if (harictSatisId) {
+          var sat = dizi(veri.altSatislar).find(function (a) { return a.id === harictSatisId; });
+          if (sat) {
+            Hesap.satisKalemleri(sat).forEach(function (kl) {
+              if (kl.partiId === p.id && kl.ad === x.ad) kalan += kl.kg;
+            });
+          }
+        }
+        if (kalan <= 0.5) return;
+        if (!havuz[x.ad]) havuz[x.ad] = { ad: x.ad, kalanKg: 0, partiler: [] };
+        havuz[x.ad].kalanKg += kalan;
+        havuz[x.ad].partiler.push({
+          partiId: p.id, kod: p.kod, tarih: p.tarih, kalanKg: kalan
+        });
+      });
+    });
+
+    return Object.keys(havuz).map(function (a) { return havuz[a]; })
+      .sort(function (a, b) { return b.kalanKg - a.kalanKg; });
+  };
+
+  /* İstenen miktarı, o kalitenin partileri arasında eskiden yeniye böler */
+  Hesap.altDagit = function (havuz, kaliteAdi, kg) {
+    var k = havuz.find(function (x) { return x.ad === kaliteAdi; });
+    var sonuc = [], kalan = S(kg);
+    if (!k) return { dagilim: sonuc, karsilanan: 0, eksik: kalan };
+    k.partiler.forEach(function (p) {
+      if (kalan <= 0.0001) return;
+      var al = Math.min(kalan, p.kalanKg);
+      if (al <= 0.0001) return;
+      sonuc.push({ partiId: p.partiId, kod: p.kod, tarih: p.tarih, kg: al });
+      kalan -= al;
+    });
+    return { dagilim: sonuc, karsilanan: S(kg) - kalan, eksik: kalan };
+  };
+
+  /* ------------------------------------------------------------
+     8MM ÜSTÜ YÜKLEME HAVUZU
+
+     Bir kamyona birkaç partinin malı birlikte yüklenebilir.
+     Yükleme eskiden yeniye (FIFO) dağıtılır: önce en eski partinin
+     stoğu erir. Böylece mal depoda bekleyip bayatlamaz.
+     ------------------------------------------------------------ */
+
+  Hesap.ustStokHavuzu = function (veri, haricSevkiyatId) {
+    var kasa = Hesap.kasa(veri);
+    return Hesap.partiListesi(veri).map(function (p) {
+      var o = Hesap.parti(veri, p.id, kasa);
+      var kalan = o.ustStokKg;
+      if (haricSevkiyatId) {
+        var sv = dizi(veri.sevkiyatlar).find(function (x) { return x.id === haricSevkiyatId; });
+        if (sv) {
+          dizi(sv.kalemler).forEach(function (kl) {
+            if (kl.partiId === p.id) kalan += S(kl.kg);
+          });
+        }
+      }
+      return { partiId: p.id, kod: p.kod, tarih: p.tarih, satici: p.satici,
+               kalanKg: kalan, usdTon: o.usdTon, birimUsd: o.birimUsd };
+    }).filter(function (x) { return x.kalanKg > 0.5; })
+      .sort(function (a, b) {
+        return String(a.tarih || '').localeCompare(String(b.tarih || ''));   // eskiden yeniye
+      });
+  };
+
+  /* İstenen yükleme miktarını partilere eskiden yeniye böler */
+  Hesap.ustDagit = function (havuz, kg) {
+    var sonuc = [], kalan = S(kg);
+    havuz.forEach(function (p) {
+      if (kalan <= 0.0001) return;
+      var al = Math.min(kalan, p.kalanKg);
+      if (al <= 0.0001) return;
+      sonuc.push({ partiId: p.partiId, kod: p.kod, tarih: p.tarih, kg: al });
+      kalan -= al;
+    });
+    return { dagilim: sonuc, karsilanan: S(kg) - kalan, eksik: kalan };
   };
 
   /* ============================================================
@@ -1291,6 +1818,58 @@ window.NOHUT_TUZ = 'nohut-ithalat-takip-v1';
     });
     t.partiler = ozetler;
     return t;
+  };
+
+  /* ============================================================
+     GENEL GİDERLER (seyahat, işletme)
+
+     Otel, uçak bileti, yeme içme… Bunlar malın maliyeti DEĞİLDİR;
+     hiçbir partiye dağıtılmaz. Yalnızca kasadan düşer. Böylece
+     USD/ton maliyet rakamı temiz kalır, ama harcanan para görünür.
+     ============================================================ */
+
+  Hesap.GENEL_GIDER_KATEGORILERI = [
+    { ad: 'Uçak bileti',        simge: '✈️' },
+    { ad: 'Otel / konaklama',   simge: '🏨' },
+    { ad: 'Yeme içme',          simge: '🍽️' },
+    { ad: 'Ulaşım (taksi, otobüs)', simge: '🚕' },
+    { ad: 'Vize / evrak',       simge: '🛂' },
+    { ad: 'Telefon / internet', simge: '📱' },
+    { ad: 'Temsil / ağırlama',  simge: '🤝' },
+    { ad: 'Diğer',              simge: '➕' }
+  ];
+
+  Hesap.genelGiderler = function (veri, kasa) {
+    kasa = kasa || Hesap.kasa(veri);
+    var liste = dizi(veri.genelGiderler).map(function (g) {
+      return {
+        kayit: g,
+        tumen: g.paraBirimi === 'USD' ? 0 : S(g.tutar),
+        usd: S(kasa.usdDegeri['genelGider:' + g.id])
+      };
+    });
+
+    var toplamT = 0, toplamU = 0;
+    var kategori = {}, gezi = {};
+    liste.forEach(function (x) {
+      toplamT += x.tumen; toplamU += x.usd;
+      var kat = x.kayit.kategori || 'Diğer';
+      kategori[kat] = (kategori[kat] || 0) + x.usd;
+      var g = (x.kayit.gezi || '').trim() || 'Belirtilmemiş';
+      if (!gezi[g]) gezi[g] = { ad: g, usd: 0, tumen: 0, adet: 0 };
+      gezi[g].usd += x.usd; gezi[g].tumen += x.tumen; gezi[g].adet++;
+    });
+
+    return {
+      liste: liste,
+      toplamTumen: toplamT,
+      toplamUsd: toplamU,
+      kategoriler: Object.keys(kategori).map(function (a) {
+        return { ad: a, usd: kategori[a] };
+      }).sort(function (a, b) { return b.usd - a.usd; }),
+      geziler: Object.keys(gezi).map(function (a) { return gezi[a]; })
+        .sort(function (a, b) { return b.usd - a.usd; })
+    };
   };
 
   /* ============================================================
@@ -1377,12 +1956,15 @@ window.NOHUT_TUZ = 'nohut-ithalat-takip-v1';
       masraflar: [],
       elemeler: [],
       altSatislar: [],
+      hamSatislar: [],
+      genelGiderler: [],
       sevkiyatlar: []
     };
   }
   Veri.bos = bos;
 
-  var KOLEKSIYONLAR = ['transferler', 'partiler', 'masraflar', 'elemeler', 'altSatislar', 'sevkiyatlar'];
+  var KOLEKSIYONLAR = ['transferler', 'partiler', 'masraflar', 'elemeler',
+                       'altSatislar', 'hamSatislar', 'genelGiderler', 'sevkiyatlar'];
 
   /* ============================================================
      MOTORLAR — depolama arkasında duran değiştirilebilir katman
@@ -1417,32 +1999,44 @@ window.NOHUT_TUZ = 'nohut-ithalat-takip-v1';
     }
   };
 
-  // Faz 2: sunucu (btksite.online/nohut). Şimdilik iskelet —
-  // sunucu erişimi bulununca burası doldurulacak, gerisi aynı kalacak.
+  // Yerel sunucu (sunucu.py): veriyi diskte gerçek bir dosyada tutar.
+  // Tarayıcı deposu kazara temizlenebilir; dosya temizlenmez, yedeklenir.
   var SunucuMotoru = {
-    ad: 'sunucu',
+    ad: 'dosya',
     kok: '',
-    calisir: function () { return false; },
+    calisir: function () { return true; },
     oku: function () {
-      return fetch(this.kok + '/api/veri', { credentials: 'include' })
-        .then(function (y) { return y.json(); })
+      return fetch(this.kok + '/api/veri', { cache: 'no-store' })
+        .then(function (y) {
+          if (!y.ok) throw new Error('Veri okunamadı (' + y.status + ')');
+          return y.json();
+        })
         .then(gecir);
     },
     yaz: function (veri) {
       return fetch(this.kok + '/api/veri', {
         method: 'PUT',
-        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(veri)
       }).then(function (y) {
-        if (!y.ok) throw new Error('Sunucuya yazılamadı');
+        if (!y.ok) throw new Error('Diske yazılamadı (' + y.status + ')');
         return true;
       });
     }
   };
 
   Veri.motorlar = { yerel: YerelMotor, sunucu: SunucuMotoru };
-  Veri.motor = YerelMotor;
+
+  /* Hangi depo kullanılacak?
+     - Yerel sunucudan (http://127.0.0.1) açıldıysa → diskteki dosya
+     - Dosyadan (file://) ya da internetten açıldıysa → tarayıcı deposu */
+  Veri.motorSec = function () {
+    var yerelSunucu = /^https?:$/.test(location.protocol) &&
+      /^(127\.0\.0\.1|localhost|\[::1\])$/.test(location.hostname);
+    Veri.motor = yerelSunucu ? SunucuMotoru : YerelMotor;
+    return Veri.motor;
+  };
+  Veri.motorSec();
 
   /* ---------- sürüm geçişi ---------- */
   function gecir(v) {
@@ -1471,6 +2065,26 @@ window.NOHUT_TUZ = 'nohut-ithalat-takip-v1';
       delete p.satici; delete p.hamKg; delete p.birimFiyat;
       delete p.tutar; delete p.odemeDurumu;
     });
+    // Eleme: tek partili kayıtları parti satırı biçimine çevir
+    v.elemeler.forEach(function (e) {
+      if (Array.isArray(e.partiler) && e.partiler.length) return;
+      if (e.partiId) {
+        e.partiler = [{ partiId: e.partiId, girenKg: Number(e.girenKg) || 0 }];
+      }
+    });
+
+    // 8mm altı kalite satırları: eski tek-değerli kayıtları satır biçimine çevir
+    v.elemeler.forEach(function (e) {
+      if (Array.isArray(e.altKalemler)) return;
+      var kg = Number(e.altKg) || 0;
+      e.altKalemler = kg > 0 ? [{ ad: 'Ayrılmamış', kg: kg }] : [];
+    });
+    v.altSatislar.forEach(function (a) {
+      if (Array.isArray(a.kalemler)) return;
+      a.kalemler = [{ ad: a.kalite || 'Ayrılmamış', kg: Number(a.kg) || 0,
+                      birimFiyat: Number(a.birimFiyat) || 0, tutar: Number(a.tutar) || 0 }];
+    });
+
     return v;
   }
 
@@ -1549,6 +2163,28 @@ window.NOHUT_TUZ = 'nohut-ithalat-takip-v1';
     return Object.keys(g).sort(function (a, b) { return g[b] - g[a]; });
   };
 
+  /* ---------- daha önce kullanılan gezi/dönem adları ---------- */
+  Veri.geziAdlari = function () {
+    var g = {};
+    db.genelGiderler.forEach(function (x) {
+      var ad = (x.gezi || '').trim();
+      if (ad) g[ad] = (g[ad] || 0) + 1;
+    });
+    return Object.keys(g).sort(function (a, b) { return g[b] - g[a]; });
+  };
+
+  /* ---------- daha önce kullanılan kalite adları ---------- */
+  Veri.kaliteAdlari = function () {
+    var g = {};
+    db.elemeler.forEach(function (e) {
+      (e.altKalemler || []).forEach(function (k) {
+        var ad = (k.ad || '').trim();
+        if (ad && ad !== 'Ayrılmamış') g[ad] = (g[ad] || 0) + 1;
+      });
+    });
+    return Object.keys(g).sort(function (a, b) { return g[b] - g[a]; });
+  };
+
   /* ---------- CRUD ---------- */
 
   Veri.ekle = function (koleksiyon, kayit) {
@@ -1586,12 +2222,14 @@ window.NOHUT_TUZ = 'nohut-ithalat-takip-v1';
     var s = [];
     var e = db.elemeler.filter(function (x) { return x.partiId === partiId; }).length;
     var a = db.altSatislar.filter(function (x) { return x.partiId === partiId; }).length;
+    var hs = db.hamSatislar.filter(function (x) { return x.partiId === partiId; }).length;
     var m = db.masraflar.filter(function (x) { return (x.partiIds || []).indexOf(partiId) !== -1; }).length;
     var v = db.sevkiyatlar.filter(function (x) {
       return (x.kalemler || []).some(function (k) { return k.partiId === partiId; });
     }).length;
     if (e) s.push(e + ' eleme kaydı');
     if (a) s.push(a + ' 8mm altı satışı');
+    if (hs) s.push(hs + ' ham satış');
     if (m) s.push(m + ' masraf');
     if (v) s.push(v + ' sevkiyat');
     return s;
@@ -1925,6 +2563,7 @@ window.NOHUT_TUZ = 'nohut-ithalat-takip-v1';
     ozet: 'Özet', partiler: 'Partiler', parti: 'Parti Maliyet Kartı',
     kasa: 'Kasa', rapor: 'Raporlar', karsilastirma: 'Parti Karşılaştırma',
     stok: 'Stok Raporu', defter: 'Kasa Defteri', sevkiyatlar: 'Sevkiyatlar', tuccarlar: 'Tüccarlar',
+    genelGiderler: 'Genel Giderler',
     sevkiyat: 'Sevkiyat Detayı', masraflar: 'Tüm Masraflar', elemeler: 'Eleme Kayıtları',
     ayarlar: 'Yedek ve Ayarlar'
   };
@@ -1943,7 +2582,8 @@ window.NOHUT_TUZ = 'nohut-ithalat-takip-v1';
               kasa: ekranKasa, rapor: ekranRapor, karsilastirma: ekranKarsilastirma,
               stok: ekranStok, defter: ekranDefter, sevkiyatlar: ekranSevkiyatlar,
               sevkiyat: ekranSevkiyat, masraflar: ekranMasraflar, elemeler: ekranElemeler,
-              tuccarlar: ekranTuccarlar, ayarlar: ekranAyarlar }[s.ad];
+              tuccarlar: ekranTuccarlar, genelGiderler: ekranGenelGiderler,
+              ayarlar: ekranAyarlar }[s.ad];
 
     el('uygulama').innerHTML = g ? g(veri, s.param) : '<div class="sayfa">Bulunamadı</div>';
 
@@ -1962,6 +2602,12 @@ window.NOHUT_TUZ = 'nohut-ithalat-takip-v1';
       d.onclick = function (e) {
         e.stopPropagation();
         window.Formlar.ac(d.dataset.form, d.dataset.param);
+      };
+    });
+    Array.prototype.forEach.call(el('uygulama').querySelectorAll('[data-pdf]'), function (d) {
+      d.onclick = function (e) {
+        e.stopPropagation();
+        window.Rapor.yazdir(d.dataset.pdf, d.dataset.param);
       };
     });
     Array.prototype.forEach.call(el('uygulama').querySelectorAll('[data-eylem]'), function (d) {
@@ -2092,6 +2738,17 @@ window.NOHUT_TUZ = 'nohut-ithalat-takip-v1';
         '</div>';
     }
 
+    /* --- genel giderler --- */
+    var gg = H.genelGiderler(veri, kasa);
+    if (gg.toplamUsd > 0) {
+      h += '<h2 class="bolum">Genel giderler</h2>';
+      h += '<div class="kutu genis" data-git="genelGiderler" style="cursor:pointer">' +
+        '<div class="etiket">Seyahat ve işletme</div>' +
+        '<div class="deger">' + Uk(gg.toplamUsd) + '</div>' +
+        '<div class="alt">' + Tk(gg.toplamTumen) + ' · malın maliyetine dahil değil →</div>' +
+        '</div>';
+    }
+
     /* --- son partiler --- */
     h += '<h2 class="bolum">Son partiler</h2>';
     if (!partiler.length) {
@@ -2216,6 +2873,23 @@ window.NOHUT_TUZ = 'nohut-ithalat-takip-v1';
     h += '<div class="satir toplam"><div class="ad">Toplam gider</div>' +
       '<div class="tutar">' + T(o.giderTumen) + '</div>' +
       '<div class="usd">' + Utam(o.giderUsd) + '</div></div>';
+
+    /* Partinin bir kısmı ham satıldıysa ya da henüz elenmediyse, alım ve
+       genel masraflar kiloya göre paylaştırılır — yoksa 8mm+ maliyeti şişer */
+    if (o.paylastirmaVar) {
+      if (o.hamSatilanKg > 0.5) {
+        h += '<div class="satir mahsup"><div class="ad">(−) Ham satılan malın payı' +
+          '<small>' + kgTam(o.hamSatilanKg) + ' elenmeden satıldı</small></div>' +
+          '<div class="tutar">−' + T(o.hamSatisMaliyetTumen) + '</div>' +
+          '<div class="usd">−' + Utam(o.hamSatisMaliyetUsd) + '</div></div>';
+      }
+      if (o.kalanMaliyetTumen > 0.5) {
+        h += '<div class="satir mahsup"><div class="ad">(−) Henüz elenmemiş malın payı' +
+          '<small>' + kgTam(o.elenmemisKg) + ' depoda bekliyor</small></div>' +
+          '<div class="tutar">−' + T(o.kalanMaliyetTumen) + '</div>' +
+          '<div class="usd"></div></div>';
+      }
+    }
     if (o.altGelirTumen > 0) {
       h += '<div class="satir mahsup"><div class="ad">(−) 8mm altı satışı' +
         '<small>' + kgTam(o.altSatilanKg) + ' satıldı</small></div>' +
@@ -2261,6 +2935,31 @@ window.NOHUT_TUZ = 'nohut-ithalat-takip-v1';
         'randıman tüccar bazında ölçülemez — parti geneli için geçerlidir.</p>';
     }
 
+    /* ham satış — elenmeden satılan mal */
+    if (o.hamSatilanKg > 0.5) {
+      var kar = o.hamSatisKarTumen;
+      h += '<h2 class="bolum">Ham satış</h2>';
+      h += '<div class="kart"><div class="kart-ic maliyet">' +
+        '<div class="satir"><div class="ad">Satılan' +
+          '<small>elenmeden, İran içinde</small></div>' +
+          '<div class="tutar">' + kgTam(o.hamSatilanKg) + '</div></div>' +
+        '<div class="satir"><div class="ad">Gelir</div>' +
+          '<div class="tutar">' + T(o.hamGelirTumen) + '</div>' +
+          '<div class="usd">' + Utam(o.hamGelirUsd) + '</div></div>' +
+        '<div class="satir"><div class="ad">Bu malın maliyeti</div>' +
+          '<div class="tutar">−' + T(o.hamSatisMaliyetTumen) + '</div>' +
+          '<div class="usd">−' + Utam(o.hamSatisMaliyetUsd) + '</div></div>' +
+        '<div class="ayrac"></div>' +
+        '<div class="satir net"><div class="ad" style="color:' +
+          (kar >= 0 ? 'var(--arti)' : 'var(--eksi)') + '">' +
+          (kar >= 0 ? 'KÂR' : 'ZARAR') + '</div>' +
+          '<div class="tutar" style="color:' + (kar >= 0 ? 'var(--arti)' : 'var(--eksi)') + '">' +
+          (kar < 0 ? '−' : '') + T(Math.abs(kar)) + '</div>' +
+          '<div class="usd">' + (o.hamSatisKarUsd < 0 ? '−' : '') +
+          Utam(Math.abs(o.hamSatisKarUsd)) + '</div></div>' +
+        '</div></div>';
+    }
+
     /* eleme sonucu */
     h += '<h2 class="bolum">Eleme sonucu</h2>';
     h += '<div class="kart"><div class="kart-ic">';
@@ -2279,6 +2978,32 @@ window.NOHUT_TUZ = 'nohut-ithalat-takip-v1';
     }
     h += '</div></div>';
 
+    /* 8mm altı kalite kırılımı */
+    var kaliteler = (o.altKaliteler || []).filter(function (x) { return x.cikanKg > 0.5; });
+    if (kaliteler.length && (kaliteler.length > 1 || kaliteler[0].ad !== H.KALITESIZ)) {
+      h += '<h2 class="bolum">8mm altı kaliteleri</h2>';
+      h += '<div class="kart tablo-sar"><table><thead><tr>' +
+        '<th>Kalite</th><th>Çıkan</th><th>Satılan</th><th>Depoda</th><th>Ort. T/kg</th><th>Gelir</th>' +
+        '</tr></thead><tbody>' +
+        kaliteler.map(function (x) {
+          return '<tr>' +
+            '<td><b>' + kacir(x.ad) + '</b></td>' +
+            '<td>' + n0(x.cikanKg) + '</td>' +
+            '<td>' + (x.satilanKg > 0.5 ? n0(x.satilanKg) : '—') + '</td>' +
+            '<td class="' + (x.kalanKg > 0.5 ? '' : 'sonuk') + '">' +
+              (x.kalanKg > 0.5 ? n0(x.kalanKg) : '—') + '</td>' +
+            '<td>' + (x.ortFiyat > 0 ? n0(x.ortFiyat) : '—') + '</td>' +
+            '<td>' + (x.gelirT > 0 ? Tk(x.gelirT) : '—') + '</td>' +
+          '</tr>';
+        }).join('') + '</tbody></table></div>';
+      var satilmayan = kaliteler.filter(function (x) { return x.kalanKg > 0.5; });
+      if (satilmayan.length) {
+        h += '<p class="kucuk-yazi" style="margin-top:8px">' +
+          satilmayan.map(function (x) { return kacir(x.ad) + ' ' + kgTam(x.kalanKg); }).join(' · ') +
+          ' henüz satılmadı — satılınca 8mm+ maliyeti düşecek.</p>';
+      }
+    }
+
     /* SONUÇ */
     if (o.ustKg > 0) {
       h += '<div class="sonuc-kutu">' +
@@ -2286,6 +3011,10 @@ window.NOHUT_TUZ = 'nohut-ithalat-takip-v1';
         '<div class="buyuk">' + Uton(o.usdTon) + ' <span style="font-size:16px;font-weight:600">/ ton</span></div>' +
         '<div class="yan">' + n0(o.birimTumen) + ' Tümen / kg</div>' +
         '<div class="not">Kullanılan ortalama kur: 1 USD = ' + n0(o.kullanilanKur) + ' Tümen<br>' +
+          (o.paylastirmaVar
+            ? 'Alım ve masrafların yalnızca <b>' + yuzde(o.elenenPay, 0) +
+              '</b>\u0027lik payı bu mala bindi — gerisi ham satılan ya da elenmemiş mala ait.<br>'
+            : '') +
           'Fiyat verirken bakman gereken rakam budur.</div>' +
       '</div>';
     }
@@ -2303,6 +3032,7 @@ window.NOHUT_TUZ = 'nohut-ithalat-takip-v1';
     /* satır satır döküm — hangi rakam nereden geliyor */
     h += '<div class="kart" style="margin-top:10px"><div class="kart-ic maliyet">' +
       [['Alınan ham mal', o.hamKg, ''],
+       ['Ham satılan', -o.hamSatilanKg, 'elenmeden İran içinde satıldı'],
        ['Elemeye giren', -o.girenKg, o.elemedeKg > 0.5 ? kgTam(o.elemedeKg) + '\'ı sonuç bekliyor' : ''],
        ['Elenmemiş kalan', o.elenmemisKg, 'depoda ham duruyor']]
         .filter(function (r) { return Math.abs(r[1]) > 0.5; })
@@ -2371,6 +3101,12 @@ window.NOHUT_TUZ = 'nohut-ithalat-takip-v1';
            : o.elenmemisKg > 0.5 ? kgTam(o.elenmemisKg) + ' hazır' : 'ham mal yok') +
         '</span></button>' +
 
+      (o.elenmemisKg > 0.5
+        ? '<button class="islem-karo" data-form="hamSatis" data-param="' + p.id + '">' +
+          '<span class="simge">🌾</span><span class="ad">Ham satış</span>' +
+          '<span class="aciklama">' + kgTam(o.elenmemisKg) + ' elenmeden satılabilir</span></button>'
+        : '') +
+
       (o.altStokKg > 0.5
         ? '<button class="islem-karo" data-form="altSatis" data-param="' + p.id + '">' +
           '<span class="simge">🪙</span><span class="ad">8mm altı satışı</span>' +
@@ -2389,6 +3125,10 @@ window.NOHUT_TUZ = 'nohut-ithalat-takip-v1';
         'style="color:var(--eksi)">' +
         '<span class="simge">🗑️</span><span class="ad">Partiyi sil</span></button>' +
       '</div>';
+
+    h += '<h2 class="bolum">Rapor</h2>';
+    h += '<button class="dugme tam" data-pdf="parti" data-param="' + p.id + '">' +
+      '📄 PDF olarak al</button>';
 
     if (p.not) {
       h += '<h2 class="bolum">Not</h2><div class="kart"><div class="kart-ic kucuk-yazi">' +
@@ -2449,8 +3189,14 @@ window.NOHUT_TUZ = 'nohut-ithalat-takip-v1';
       raporDugme('sevkiyatlar', '🚚', 'Sevkiyatlar', 'Yüklenen mal, maliyet ve kâr') +
       raporDugme('defter', '📒', 'Kasa defteri', 'Tüm para giriş çıkışı') +
       raporDugme('masraflar', '💸', 'Tüm masraflar', 'Kategoriye göre döküm') +
+      raporDugme('genelGiderler', '✈️', 'Genel giderler', 'Seyahat, otel, yeme içme') +
       raporDugme('elemeler', '⚙️', 'Eleme kayıtları', 'Randıman geçmişi') +
       '</div>';
+    h += '<h2 class="bolum">PDF</h2>';
+    h += '<button class="dugme ana tam" data-pdf="ozet">📄 Genel özet raporu (PDF)</button>';
+    h += '<p class="kucuk-yazi" style="margin-top:8px">Her rapor ekranında da PDF düğmesi var. ' +
+      'PDF olarak kaydedip WhatsApp\'tan gönderebilirsin.</p>';
+
     h += '<h2 class="bolum">Program</h2>' +
       '<div class="secim-izgara">' +
       raporDugme('ayarlar', '💾', 'Yedek ve ayarlar', 'Veriyi indir, geri yükle') +
@@ -2492,6 +3238,8 @@ window.NOHUT_TUZ = 'nohut-ithalat-takip-v1';
 
     h += '<div class="bosluk"></div>' +
       '<button class="dugme tam" data-git="tuccarlar">🤝 Tüccar bazında alım fiyatları</button>';
+    h += '<div class="bosluk"></div>' +
+      '<button class="dugme tam" data-pdf="karsilastirma">📄 PDF olarak al</button>';
     return h + '</div>';
   }
 
@@ -2546,6 +3294,81 @@ window.NOHUT_TUZ = 'nohut-ithalat-takip-v1';
               (t.borc > 0 ? Tk(t.borc) : '—') + '</td>' +
           '</tr>';
         }).join('') + '</tbody></table></div>';
+    h += '<div class="bosluk"></div>' +
+      '<button class="dugme tam" data-pdf="tuccarlar">📄 PDF olarak al</button>';
+    return h + '</div>';
+  }
+
+  /* --- genel giderler (seyahat / işletme) --- */
+  function ekranGenelGiderler(veri) {
+    var kasa = H.kasa(veri);
+    var g = H.genelGiderler(veri, kasa);
+    var h = '<div class="sayfa">';
+
+    h += '<button class="dugme ana tam" data-form="genelGider">✈️ Genel gider ekle</button>' +
+         '<div class="bosluk"></div>';
+
+    if (!g.liste.length) {
+      h += bosDurum('✈️',
+        'Henüz genel gider yok.<br>Otel, uçak bileti, yeme içme gibi masraflar buraya girilir — ' +
+        'kasadan düşer ama malın maliyetine binmez.');
+      return h + '</div>';
+    }
+
+    h += '<div class="kutular">' +
+      kutu('Toplam genel gider', Uk(g.toplamUsd), Tk(g.toplamTumen), true) + '</div>';
+
+    h += '<div class="uyari-serit"><span class="simge">ℹ️</span><div>' +
+      '<b>Bu tutarlar malın maliyetine dahil değil</b>' +
+      'Kasadan düşerler ama hiçbir partiye dağıtılmazlar. Nohudun USD/ton ' +
+      'maliyeti bu giderlerden etkilenmez.</div></div>';
+
+    var gercekGezi = g.geziler.filter(function (x) { return x.ad !== 'Belirtilmemiş'; });
+    if (gercekGezi.length) {
+      h += '<h2 class="bolum">Geziye göre</h2>';
+      h += '<div class="kart"><ul class="liste">' + g.geziler.map(function (x) {
+        return '<li style="cursor:default"><div class="sol">' +
+          '<div class="ana">' + kacir(x.ad) + '</div>' +
+          '<div class="yan">' + x.adet + ' kayıt · ' + Tk(x.tumen) + '</div></div>' +
+          '<div class="sag"><div class="ana">' + U(x.usd) + '</div>' +
+          '<div class="yan">toplam</div></div></li>';
+      }).join('') + '</ul></div>';
+    }
+
+    h += '<h2 class="bolum">Kategoriye göre</h2>';
+    h += '<div class="kart"><div class="kart-ic maliyet">' +
+      g.kategoriler.map(function (x) {
+        var kat = H.GENEL_GIDER_KATEGORILERI.find(function (y) { return y.ad === x.ad; });
+        return '<div class="satir"><div class="ad">' +
+          (kat ? kat.simge + ' ' : '') + kacir(x.ad) + '</div>' +
+          '<div class="tutar">' + U(x.usd) + '</div></div>';
+      }).join('') +
+      '<div class="ayrac"></div>' +
+      '<div class="satir net"><div class="ad">TOPLAM</div>' +
+      '<div class="tutar">' + U(g.toplamUsd) + '</div></div>' +
+      '</div></div>';
+
+    h += '<h2 class="bolum">Kayıtlar</h2>';
+    var sirali = g.liste.slice().sort(function (a, b) {
+      return (b.kayit.tarih || '').localeCompare(a.kayit.tarih || '');
+    });
+    h += '<div class="kart"><ul class="liste">' + sirali.map(function (x) {
+      var r = x.kayit;
+      var kat = H.GENEL_GIDER_KATEGORILERI.find(function (y) { return y.ad === r.kategori; });
+      return '<li data-form="genelGider" data-param="' + r.id + '">' +
+        '<span style="font-size:18px">' + (kat ? kat.simge : '•') + '</span>' +
+        '<div class="sol"><div class="ana">' + kacir(r.kategori || 'Genel gider') + '</div>' +
+        '<div class="yan">' + tarihGoster(r.tarih) +
+          (r.gezi ? ' · ' + kacir(r.gezi) : '') +
+          (r.aciklama ? ' · ' + kacir(r.aciklama) : '') + '</div></div>' +
+        '<div class="sag"><div class="ana">' +
+          (r.paraBirimi === 'USD' ? U(r.tutar) : Tk(r.tutar)) + '</div>' +
+        '<div class="yan">' + (r.paraBirimi === 'USD' ? 'USD' : U(x.usd)) + '</div></div>' +
+        '<span class="ok">›</span></li>';
+    }).join('') + '</ul></div>';
+
+    h += '<div class="bosluk"></div>' +
+      '<button class="dugme tam" data-pdf="genelGiderler">📄 PDF olarak al</button>';
     return h + '</div>';
   }
 
@@ -2583,6 +3406,8 @@ window.NOHUT_TUZ = 'nohut-ithalat-takip-v1';
         }).join('') + '</tbody></table></div>';
       h += '<p class="kucuk-yazi" style="margin-top:8px">Değer = depodaki 8mm+ malın maliyet karşılığı (USD).</p>';
     }
+    h += '<div class="bosluk"></div>' +
+      '<button class="dugme tam" data-pdf="stok">📄 PDF olarak al</button>';
     return h + '</div>';
   }
 
@@ -2607,6 +3432,8 @@ window.NOHUT_TUZ = 'nohut-ithalat-takip-v1';
       }).join('') + '</tbody></table></div>';
     h += '<p class="kucuk-yazi" style="margin-top:8px">Tutarlar Tümen. Ortalama kur, o andaki kasa ortalamasıdır — ' +
       'harcamaların USD karşılığı bu kurla hesaplanır.</p>';
+    h += '<div class="bosluk"></div>' +
+      '<button class="dugme tam" data-pdf="defter">📄 PDF olarak al</button>';
     return h + '</div>';
   }
 
@@ -2670,6 +3497,8 @@ window.NOHUT_TUZ = 'nohut-ithalat-takip-v1';
           '<td>' + U(k.maliyetUsd) + '</td></tr>';
       }).join('') + '</tbody></table></div>';
 
+    h += '<div class="bosluk"></div>' +
+      '<button class="dugme tam" data-pdf="sevkiyat" data-param="' + s.id + '">📄 PDF olarak al</button>';
     h += '<div class="bosluk"></div><div class="dugmeler">' +
       '<button class="dugme" data-form="sevkiyat" data-param="' + s.id + '">✏️ Düzenle</button>' +
       '<button class="dugme tehlike" data-eylem="sevkiyatSil" data-param="' + s.id + '">Sil</button></div>';
@@ -2745,10 +3574,19 @@ window.NOHUT_TUZ = 'nohut-ithalat-takip-v1';
   /* --- ayarlar / yedek --- */
   function ekranAyarlar(veri) {
     var h = '<div class="sayfa">';
-    h += '<div class="uyari-serit"><span class="simge">💾</span><div>' +
-      '<b>Verilerin şu an sadece bu cihazda</b>' +
-      'Tarayıcı verisi silinirse kayıtlar gider. Haftada bir yedek al — dosyayı kendine ' +
-      'WhatsApp/e-posta ile gönder, orada durur.</div></div>';
+    var dosyaDeposu = V.motor.ad === 'dosya';
+    h += dosyaDeposu
+      ? '<div class="uyari-serit" style="background:var(--arti-ac);' +
+        'border-color:color-mix(in srgb,var(--arti) 30%,transparent)">' +
+        '<span class="simge">✅</span><div><b>Verilerin diskte güvende</b>' +
+        'Kayıtlar <b>Belgeler → Nohut Takip → veri.json</b> dosyasında duruyor. ' +
+        'Tarayıcı verisi temizlense bile kaybolmaz; her değişiklikte otomatik yedek alınır ' +
+        '(yedekler klasörü). Time Machine ve iCloud da bu klasörü yedekler.</div></div>'
+      : '<div class="uyari-serit kotu"><span class="simge">⚠️</span><div>' +
+        '<b>Veriler tarayıcı deposunda — riskli</b>' +
+        'Program dosyadan açılmış. Tarayıcı verisi temizlenirse kayıtlar <b>geri gelmez</b>. ' +
+        'Güvenli kullanım için <b>Nohut Takip</b> uygulamasından aç. ' +
+        'Şimdilik sık sık yedek al.</div></div>';
 
     h += '<h2 class="bolum">Yedek</h2>';
     h += '<div class="kart"><div class="kart-ic">' +
@@ -2757,6 +3595,18 @@ window.NOHUT_TUZ = 'nohut-ithalat-takip-v1';
       '<button class="dugme ana" data-eylem="yedekAl">⬇️ Yedek indir</button>' +
       '<button class="dugme" data-eylem="yedekYukle">⬆️ Yedekten yükle</button>' +
       '</div></div></div>';
+
+    h += '<h2 class="bolum">Firma adı</h2>';
+    h += '<div class="kart"><div class="kart-ic">' +
+      '<p class="kucuk-yazi" style="margin:0 0 10px">PDF raporlarının üstünde görünür. ' +
+      'Boş bırakabilirsin.</p>' +
+      '<div class="onek"><input type="text" id="firmaAdi" placeholder="örn. Gemi Tarım Ürünleri" ' +
+        'value="' + kacir((veri.ayarlar || {}).firma || '') + '" ' +
+        'style="width:100%;padding:12px 13px;border:1px solid var(--cizgi);border-radius:11px;' +
+        'background:var(--kart2);color:var(--metin);font-size:16px;min-height:46px"></div>' +
+      '<div class="bosluk"></div>' +
+      '<button class="dugme" data-eylem="firmaKaydet">Kaydet</button>' +
+      '</div></div>';
 
     h += '<h2 class="bolum">Zorunlu giderler</h2>';
     h += '<p class="kucuk-yazi" style="margin:0 0 10px">İşaretli kalemler her partide ' +
@@ -2793,7 +3643,9 @@ window.NOHUT_TUZ = 'nohut-ithalat-takip-v1';
     h += '<h2 class="bolum">Sürüm</h2>';
     h += '<div class="kart"><div class="kart-ic kucuk-yazi">' +
       'Nohut İthalat Takip · Faz 1 (çevrimdışı)<br>' +
-      'Veri deposu: ' + kacir(V.motor.ad) + '</div></div>';
+      'Veri deposu: ' + (V.motor.ad === 'dosya'
+        ? 'diskteki dosya (~/Belgeler/Nohut Takip/veri.json)'
+        : 'tarayıcı deposu') + '</div></div>';
     return h + '</div>';
   }
 
@@ -2818,6 +3670,13 @@ window.NOHUT_TUZ = 'nohut-ithalat-takip-v1';
     sevkiyatSil: function (id) {
       A.onayla('Sevkiyatı sil', 'Bu sevkiyat kaydı silinecek. Yüklenen mal partilere geri döner.',
         'Sil', function () { V.sil('sevkiyatlar', id); A.bildir('Sevkiyat silindi'); Git.geri(); }, true);
+    },
+    firmaKaydet: function () {
+      var veri = V.hepsi();
+      if (!veri.ayarlar) veri.ayarlar = {};
+      veri.ayarlar.firma = (el('firmaAdi') || {}).value || '';
+      V.kaydet();
+      A.bildir('Firma adı kaydedildi');
     },
     zorunluDegistir: function (ad) {
       var veri = V.hepsi();
@@ -2896,7 +3755,9 @@ window.NOHUT_TUZ = 'nohut-ithalat-takip-v1';
       ['eleme', '⚙️', 'Eleme', 'Elemeye gönderdin ya da sonuç geldi'],
       ['masraf', '💸', 'Masraf', 'Nakliye, hammaliye, çuval, gümrük…'],
       ['altSatis', '🪙', '8mm altı satışı', 'İran\'da geri sattığın küçük nohut'],
+      ['hamSatis', '🌾', 'Ham satış', 'Elemeden geçmeden sattığın mal'],
       ['transfer', '💵', 'Döviz transferi', 'Dolar gönderip Tümen aldın'],
+      ['genelGider', '✈️', 'Genel gider', 'Otel, uçak, yeme içme — mala binmez'],
       ['sevkiyat', '🚚', 'Sevkiyat', 'Kamyona yükleyip yola çıkardın']
     ];
     var p = A.panelAc('Ne kaydedeceksin?',
@@ -3378,9 +4239,12 @@ window.NOHUT_TUZ = 'nohut-ithalat-takip-v1';
       var kimlik = 'g_' + n;
       kalemAd[kimlik] = r;
 
-      var rozet = r.durum === 'girildi' ? '<span class="rozet arti">girildi</span>'
-        : r.durum === 'eksik' ? '<span class="rozet eksi">eksik</span>'
-        : r.durum === 'beklemede' ? '<span class="rozet uyari">eleme bekliyor</span>' : '';
+      var rozet = '<span class="rozet ' +
+        (r.durum === 'girildi' ? 'arti' : r.durum === 'eksik' ? 'eksi'
+         : r.durum === 'beklemede' ? 'uyari' : 'sonuk') +
+        '" id="' + kimlik + '_rozet">' +
+        (r.durum === 'girildi' ? 'girildi' : r.durum === 'eksik' ? 'eksik'
+         : r.durum === 'beklemede' ? 'eleme bekliyor' : '') + '</span>';
 
       var giris;
       if (r.kaynak === 'eleme') {
@@ -3401,10 +4265,22 @@ window.NOHUT_TUZ = 'nohut-ithalat-takip-v1';
                           : r.adet + ' ayrı kayıt var — Masraflar ekranından düzenlenir.') +
           '</div>';
       } else {
-        giris = '<div class="onek">' +
-          '<input type="text" inputmode="decimal" data-sayi id="' + kimlik + '" ' +
-            'placeholder="0" value="' + (r.tumen > 0 ? Math.round(r.tumen) : '') + '">' +
-          '<span class="birim">T</span></div>' +
+        var tip = r.tutarTipi || 'goturu';
+        var baslangic = r.tumen > 0
+          ? Math.round(H.giderBirimi(tip, r.tumen, o.hamKg)) : '';
+        giris =
+          '<div class="gider-tip">' +
+            H.GIDER_TIPLERI.map(function (t) {
+              return '<label><input type="radio" name="tip' + n + '" value="' + t.deger + '"' +
+                (tip === t.deger ? ' checked' : '') + '><span>' + t.ad + '</span></label>';
+            }).join('') +
+          '</div>' +
+          '<div class="onek">' +
+            '<input type="text" inputmode="decimal" data-sayi id="' + kimlik + '" ' +
+              'placeholder="0" value="' + baslangic + '">' +
+            '<span class="birim" id="' + kimlik + '_birim">' +
+              H.giderBirimiAdi(tip) + '</span>' +
+          '</div>' +
           '<div class="ipucu" id="' + kimlik + '_ipucu"></div>';
       }
 
@@ -3441,11 +4317,23 @@ window.NOHUT_TUZ = 'nohut-ithalat-takip-v1';
       ac('eleme', partiId);
     });
 
+    function satirTipi(kimlik) {
+      var n = kimlik.slice(2);
+      var s = $('input[name="tip' + n + '"]:checked', p);
+      return s ? s.value : 'goturu';
+    }
+
+    // Kayıt anında da aynı hesabı kullanmak için satır tutarını üretir
+    function satirTutari(kimlik, r) {
+      if (!el(kimlik)) return r.tumen;              // düzenlenemeyen satır
+      return H.giderTutari(satirTipi(kimlik), sayi(kimlik), o.hamKg);
+    }
+
     function tazele() {
       var toplam = 0, eksikSayisi = 0, bekleyen = 0;
       Object.keys(kalemAd).forEach(function (kimlik) {
         var r = kalemAd[kimlik];
-        var v = el(kimlik) ? sayi(kimlik) : r.tumen;
+        var v = satirTutari(kimlik, r);
         toplam += v;
         var satir = p.querySelector('[data-kalem="' + kimlik.slice(2) + '"]');
         if (r.zorunlu && v <= 0 && r.durum === 'beklemede') bekleyen++;
@@ -3453,12 +4341,32 @@ window.NOHUT_TUZ = 'nohut-ithalat-takip-v1';
           eksikSayisi++;
           if (satir) satir.classList.add('eksik');
         } else if (satir) satir.classList.remove('eksik');
+
+        // rozeti yazdıkça güncelle — girilen kalem "eksik" görünmesin
+        var rz = el(kimlik + '_rozet');
+        if (rz && r.kaynak !== 'eleme') {
+          if (v > 0) { rz.className = 'rozet arti'; rz.textContent = 'girildi'; }
+          else if (r.zorunlu) { rz.className = 'rozet eksi'; rz.textContent = 'eksik'; }
+          else { rz.className = 'rozet sonuk'; rz.textContent = ''; }
+        }
         var ip = el(kimlik + '_ipucu');
         if (ip) {
+          var tip = satirTipi(kimlik);
+          var girilen = sayi(kimlik);
+          var bl = el(kimlik + '_birim');
+          if (bl) bl.textContent = H.giderBirimiAdi(tip);
           ip.className = v > 0 ? 'ipucu vurgulu' : 'ipucu';
-          ip.innerHTML = v > 0
-            ? A.Tk(v) + (kasa.ortKur > 0 ? ' ≈ ' + A.U(v / kasa.ortKur) : '')
-            : (r.zorunlu ? 'Girilmezse maliyet olduğundan düşük çıkar' : '');
+          if (v > 0) {
+            var carpim = tip === 'kg'
+              ? n0(girilen) + ' T/kg × ' + kgTam(o.hamKg) + ' = '
+              : tip === 'ton'
+                ? n0(girilen) + ' T/ton × ' + n0(o.hamKg / 1000) + ' ton = '
+                : '';
+            ip.innerHTML = carpim + '<b>' + A.T(v) + '</b>' +
+              (kasa.ortKur > 0 ? ' ≈ ' + A.U(v / kasa.ortKur) : '');
+          } else {
+            ip.innerHTML = r.zorunlu ? 'Girilmezse maliyet olduğundan düşük çıkar' : '';
+          }
         }
       });
 
@@ -3486,15 +4394,20 @@ window.NOHUT_TUZ = 'nohut-ithalat-takip-v1';
       Object.keys(kalemAd).forEach(function (kimlik) {
         var r = kalemAd[kimlik];
         if (!el(kimlik)) return;              // düzenlenemeyen satır
-        var v = sayi(kimlik);
+        var tip = satirTipi(kimlik);
+        var birim = sayi(kimlik);
+        var v = H.giderTutari(tip, birim, o.hamKg);
         if (v > 0 && r.kayitId) {
-          if (Math.round(v) !== Math.round(r.tumen)) {
-            V.guncelle('masraflar', r.kayitId, { tutar: v }); guncellendi++;
+          if (Math.round(v) !== Math.round(r.tumen) || tip !== r.tutarTipi) {
+            V.guncelle('masraflar', r.kayitId,
+              { tutar: v, tutarTipi: tip, birimFiyat: birim });
+            guncellendi++;
           }
         } else if (v > 0) {
           V.ekle('masraflar', {
             tarih: o.parti.tarih || bugun(), kategori: r.ad, paraBirimi: 'TMN',
-            tutar: v, aciklama: '', partiIds: [partiId], dagitim: 'kg'
+            tutar: v, tutarTipi: tip, birimFiyat: birim,
+            aciklama: '', partiIds: [partiId], dagitim: 'kg'
           });
           eklendi++;
         } else if (r.kayitId) {
@@ -3541,39 +4454,33 @@ window.NOHUT_TUZ = 'nohut-ithalat-takip-v1';
 
     /* Eleme genelde kilo başına fiyatlanır — varsayılan giriş şekli bu.
        Kayıtta toplam tutar saklanır, motor tarafı hiç değişmez. */
-    var ucretTipi = k ? (k.ucretTipi || 'toplam') : 'kg';
+    var ucretTipi = k ? (k.ucretTipi === 'toplam' ? 'goturu' : (k.ucretTipi || 'goturu')) : 'kg';
     var ucretBaslangic = '';
     if (k) {
-      if (ucretTipi === 'kg') {
-        ucretBaslangic = Math.round(k.ucretBirim ||
-          (Number(k.girenKg) > 0 ? Number(k.ucret) / Number(k.girenKg) : 0)) || '';
-      } else {
-        ucretBaslangic = Math.round(Number(k.ucret) || 0) || '';
-      }
+      ucretBaslangic = Math.round(
+        H.giderBirimi(ucretTipi, Number(k.ucret) || 0, Number(k.girenKg) || 0)) || '';
     }
 
     var govde =
       '<div class="ikili">' +
         alan({ id: 'f_tarih', etiket: 'Tarih', tip: 'date', deger: k ? k.tarih : bugun() }) +
-        alan({ id: 'f_parti', etiket: 'Parti', tip: 'secim', deger: secilenParti,
-               secenekler: partiler.map(function (pp) {
-                 var kalan = kalanHam[pp.id] || 0;
-                 return { deger: pp.id,
-                          ad: pp.kod + ' — ' + (kalan > 0.5 ? kgTam(kalan) + ' hazır' : 'ham mal yok') };
-               }) }) +
+        alan({ id: 'f_kayitNo', etiket: 'Eleme no', deger: k ? (k.no || '') : '',
+               yerTutucu: 'isteğe bağlı' }) +
       '</div>' +
       '<div class="alan">' +
-        '<label for="f_giren">Elemeye giren miktar</label>' +
-        '<div class="onek">' +
-          '<input type="text" inputmode="decimal" data-sayi id="f_giren" autocomplete="off" ' +
-            'placeholder="10.000" value="' + (k ? k.girenKg : '') + '">' +
-          '<span class="birim">kg</span>' +
-        '</div>' +
+        '<label>Elemeye giren partiler</label>' +
+        '<div class="ipucu" style="margin-bottom:8px">Birkaç partiyi birlikte ' +
+          'eletiyorsan hepsini yaz — çıktılar giren kilo oranında paylaştırılır.</div>' +
+        '<div class="onek" style="margin-bottom:8px">' +
+          '<input type="text" inputmode="decimal" data-sayi id="f_toplamGiren" ' +
+            'placeholder="toplam kg"><span class="birim">kg</span></div>' +
         '<button type="button" class="tumu-dugme" id="tumuGonder">' +
-          '<span class="tumu-sol">Tümünü elemeye gönder</span>' +
+          '<span class="tumu-sol">En eskiden başlayarak dağıt</span>' +
           '<span class="tumu-kg" id="tumuKg">—</span>' +
         '</button>' +
         '<div class="ipucu" id="f_giren_ipucu"></div>' +
+        '<div class="bosluk"></div>' +
+        '<div id="girdiler"></div>' +
       '</div>' +
       '<div class="alan-grubu"><div class="onay-satir">' +
         '<input type="checkbox" id="f_tamam"' + (tamamlandi ? ' checked' : '') + '>' +
@@ -3581,25 +4488,35 @@ window.NOHUT_TUZ = 'nohut-ithalat-takip-v1';
         '<div id="sonucAlanlari">' +
           alan({ id: 'f_ust', etiket: '8mm üstü (ihracatlık)', tip: 'sayi', birim: 'kg',
                  deger: k ? k.ustKg : '', yerTutucu: '8.200' }) +
-          alan({ id: 'f_alt', etiket: '8mm altı (İran\'da satılacak)', tip: 'sayi', birim: 'kg',
-                 deger: k ? k.altKg : '', yerTutucu: '1.400' }) +
+          '<div class="alan">' +
+            '<label>8mm altı (İran\'da satılacak)</label>' +
+            '<div id="altKaliteler"></div>' +
+            '<button class="dugme kucuk" type="button" id="kaliteEkle">+ Kalite ayır</button>' +
+            '<div class="ipucu" id="f_alt_ipucu"></div>' +
+          '</div>' +
           alan({ id: 'f_fire', etiket: 'Fire (taş, toprak — değersiz)', tip: 'sayi', birim: 'kg',
                  deger: k ? k.fireKg : '', yerTutucu: '400' }) +
         '</div>' +
       '</div>' +
       '<div id="denetim"></div>' +
+      '<datalist id="kaliteListesi">' +
+        ['1. kalite', '2. kalite', '3. kalite', 'Kırık']
+          .concat(V.kaliteAdlari())
+          .filter(function (x, i, a) { return a.indexOf(x) === i; })
+          .map(function (a) { return '<option value="' + kacir(a) + '">'; }).join('') +
+      '</datalist>' +
       '<div class="alan">' +
         '<label>Eleme ücreti</label>' +
         '<div class="secim-satir" style="margin-bottom:9px">' +
-          [['kg', 'Kilo başına'], ['toplam', 'Toplam tutar']].map(function (t) {
-            return '<label><input type="radio" name="ucretTipi" value="' + t[0] + '"' +
-              (ucretTipi === t[0] ? ' checked' : '') + '><span>' + t[1] + '</span></label>';
+          H.GIDER_TIPLERI.map(function (t) {
+            return '<label><input type="radio" name="ucretTipi" value="' + t.deger + '"' +
+              (ucretTipi === t.deger ? ' checked' : '') + '><span>' + t.ad + '</span></label>';
           }).join('') +
         '</div>' +
         '<div class="onek">' +
           '<input type="text" inputmode="decimal" data-sayi id="f_ucret" autocomplete="off" ' +
             'value="' + (ucretBaslangic || '') + '" placeholder="6.000">' +
-          '<span class="birim" id="f_ucret_birim">T/kg</span>' +
+          '<span class="birim" id="f_ucret_birim">' + H.giderBirimiAdi(ucretTipi) + '</span>' +
         '</div>' +
         '<div class="ipucu" id="f_ucret_ipucu"></div>' +
       '</div>' +
@@ -3607,83 +4524,248 @@ window.NOHUT_TUZ = 'nohut-ithalat-takip-v1';
 
     var p = A.panelAc(k ? 'Eleme kaydını düzenle' : 'Eleme kaydı', govde, ayak(!!k));
 
+    var ipuclari = { __hepsi: function () { tazele(); } };
+
+    /* ---------- elemeye giren parti satırları ---------- */
+    var hazirPartiler = partiler.filter(function (pp) {
+      return (kalanHam[pp.id] || 0) > 0.5;
+    }).sort(function (a, b) {
+      return String(a.tarih || '').localeCompare(String(b.tarih || ''));   // eskiden yeniye
+    });
+
+    function girdiSatirlariniYaz() {
+      var mevcut = k ? H.elemeGirdileri(k) : [];
+      var harita = {};
+      mevcut.forEach(function (x) { harita[x.partiId] = x.girenKg; });
+
+      var gosterilecek = hazirPartiler.slice();
+      function ekle(id) {
+        if (!id) return;
+        if (gosterilecek.some(function (pp) { return pp.id === id; })) return;
+        var pp = partiler.find(function (y) { return y.id === id; });
+        if (pp) gosterilecek.push(pp);
+      }
+      mevcut.forEach(function (x) { ekle(x.partiId); });
+      // Parti kartından açıldıysa o parti stoğu bitmiş olsa da görünsün
+      ekle(onSecili);
+      gosterilecek.sort(function (a, b) {
+        return String(a.tarih || '').localeCompare(String(b.tarih || ''));
+      });
+
+      el('girdiler').innerHTML = gosterilecek.map(function (pp) {
+        var kalan = kalanHam[pp.id] || 0;
+        return '<div class="alan" style="margin-bottom:10px">' +
+          '<label style="display:flex;justify-content:space-between">' +
+            '<span>' + kacir(pp.kod) + ' · ' + A.tarihGoster(pp.tarih) + '</span>' +
+            '<span style="color:var(--metin3);font-weight:400">' + kgTam(kalan) + ' hazır</span>' +
+          '</label>' +
+          '<div class="onek"><input type="text" inputmode="decimal" data-sayi ' +
+            'id="gi_' + pp.id + '" placeholder="0" value="' +
+            (harita[pp.id] || '') + '"><span class="birim">kg</span></div>' +
+          '<div class="ipucu" id="gi_' + pp.id + '_ipucu"></div>' +
+        '</div>';
+      }).join('');
+      A.sayiAlanlariniBagla(p, ipuclari);
+    }
+
+    function girdiler() {
+      var s = [];
+      partiler.forEach(function (pp) {
+        if (!el('gi_' + pp.id)) return;
+        var v = sayi('gi_' + pp.id);
+        if (v > 0) s.push({ partiId: pp.id, kod: pp.kod, girenKg: v });
+      });
+      return s;
+    }
+    function girenToplam() {
+      return girdiler().reduce(function (t, x) { return t + x.girenKg; }, 0);
+    }
+
+    /* ---------- 8mm altı kalite satırları ---------- */
+    var kaliteSayac = 0;
+    var kaliteAdlari = V.kaliteAdlari();
+
+    function kaliteSatiri(kalem, ilk) {
+      var i = ++kaliteSayac;
+      var d = document.createElement('div');
+      d.className = 'kalite-satir';
+      d.dataset.kalite = i;
+      var varsayilanAd = (kalem && kalem.ad && kalem.ad !== H.KALITESIZ) ? kalem.ad : '';
+      d.innerHTML =
+        '<input type="text" class="kalite-ad" id="ka' + i + '" list="kaliteListesi" ' +
+          'placeholder="' + (ilk ? 'Kalite adı (boş bırakılabilir)' : (kaliteSayac + '. kalite')) + '" ' +
+          'autocomplete="off" value="' + kacir(varsayilanAd) + '">' +
+        '<div class="onek kalite-kg">' +
+          '<input type="text" inputmode="decimal" data-sayi id="kk' + i + '" ' +
+            'placeholder="0" value="' + (kalem && kalem.kg ? kalem.kg : '') + '">' +
+          '<span class="birim">kg</span></div>' +
+        '<button type="button" class="alim-sil kalite-sil" aria-label="Kaldır">✕</button>';
+      el('altKaliteler').appendChild(d);
+      $('.kalite-sil', d).onclick = function () {
+        if (el('altKaliteler').children.length <= 1) return hata('En az bir satır olmalı');
+        d.remove(); tazele();
+      };
+      A.sayiAlanlariniBagla(p, ipuclari);
+      return d;
+    }
+
+    function kaliteler() {
+      return Array.prototype.map.call(el('altKaliteler').children, function (d) {
+        var i = d.dataset.kalite;
+        return { ad: deger('ka' + i) || H.KALITESIZ, kg: sayi('kk' + i) };
+      });
+    }
+    function altToplam() {
+      return kaliteler().reduce(function (t, x) { return t + x.kg; }, 0);
+    }
+
+    function tumu() {
+      var s = kaliteler();
+      var g = el('altKaliteler').children;
+      for (var j = 0; j < g.length; j++) {
+        $('.kalite-sil', g[j]).style.visibility = g.length > 1 ? '' : 'hidden';
+      }
+      return s;
+    }
+
     function tamamMi() { return el('f_tamam').checked; }
     el('f_tamam').onchange = function () { tazele(); };
 
-    function kalanKg() { return kalanHam[deger('f_parti')] || 0; }
+    function havuzToplam() {
+      var t = 0;
+      hazirPartiler.forEach(function (pp) { t += kalanHam[pp.id] || 0; });
+      return t;
+    }
 
-    /* Tek dokunuşla o partide bekleyen tüm ham malı elemeye gönder */
+    /* İstenen toplamı en eski partiden başlayarak partilere böler */
     el('tumuGonder').onclick = function () {
-      var kalan = kalanKg();
-      if (kalan <= 0.5) return hata('Bu partide elenmemiş ham mal kalmamış');
-      var g = el('f_giren');
-      g.value = n0(kalan);
-      g.dispatchEvent(new Event('input', { bubbles: true }));
-      g.focus();
+      var hv = havuzToplam();
+      if (hv <= 0.5) return hata('Elenmemiş ham mal kalmamış');
+      var istenen = sayi('f_toplamGiren');
+      if (istenen <= 0) {
+        istenen = hv;                       // miktar yazılmadıysa tamamı
+        el('f_toplamGiren').value = n0(hv);
+      }
+      var kalan = istenen, kullanilan = 0;
+      hazirPartiler.forEach(function (pp) {
+        var alan = el('gi_' + pp.id);
+        if (!alan) return;
+        var al = Math.min(kalan, kalanHam[pp.id] || 0);
+        alan.value = al > 0.0001 ? n0(al) : '';
+        if (al > 0.0001) { kalan -= al; kullanilan++; }
+      });
+      tazele();
+      if (kalan > 0.5) A.bildir('Depoda ' + kgTam(hv) + ' var — ' + kgTam(kalan) + ' eksik');
+      else A.bildir(kullanilan + ' partiden dağıtıldı');
     };
 
     function tazele() {
-      /* --- "tümü" düğmesi ve kalan ham mal bilgisi --- */
-      var kalan = kalanKg();
-      var girenSimdi = sayi('f_giren');
-      el('tumuKg').textContent = kalan > 0.5 ? kgTam(kalan) : 'yok';
-      el('tumuGonder').disabled = kalan <= 0.5;
-      el('tumuGonder').classList.toggle('pasif', kalan <= 0.5);
-      el('tumuGonder').classList.toggle('secili', kalan > 0.5 && Math.abs(girenSimdi - kalan) < 0.5);
+      /* --- parti girdileri --- */
+      var hv = havuzToplam();
+      el('tumuKg').textContent = hv > 0.5 ? kgTam(hv) : 'yok';
+      el('tumuGonder').disabled = hv <= 0.5;
+      el('tumuGonder').classList.toggle('pasif', hv <= 0.5);
+
+      var gr = girdiler();
+      var girenSimdi = girenToplam();
+      var asim = false;
+      partiler.forEach(function (pp) {
+        var ip = el('gi_' + pp.id + '_ipucu');
+        if (!ip) return;
+        var v = sayi('gi_' + pp.id);
+        var kalan = kalanHam[pp.id] || 0;
+        if (v > kalan + 0.5) {
+          asim = true;
+          ip.className = 'ipucu hata';
+          ip.innerHTML = '⚠️ Bu partide sadece ' + kgTam(kalan) + ' var';
+        } else if (v > 0) {
+          ip.className = 'ipucu vurgulu';
+          ip.innerHTML = kalan - v > 0.5 ? kgTam(kalan - v) + ' kalacak' : 'tamamı gidiyor';
+        } else { ip.className = 'ipucu'; ip.innerHTML = ''; }
+      });
+
       var gip = el('f_giren_ipucu');
-      if (girenSimdi > kalan + 0.5) {
+      if (asim) {
         gip.className = 'ipucu hata';
-        gip.innerHTML = '⚠️ Bu partide elenmemiş sadece ' + kgTam(kalan) + ' ham mal var.';
-      } else if (kalan <= 0.5) {
-        gip.className = 'ipucu';
-        gip.innerHTML = 'Bu partinin ham malının tamamı elemeye gönderilmiş.';
+        gip.innerHTML = 'Bir partide stoktan fazla miktar var.';
+      } else if (gr.length > 1) {
+        gip.className = 'ipucu vurgulu';
+        gip.innerHTML = '<b>' + gr.length + ' parti · toplam ' + kgTam(girenSimdi) + '</b> — ' +
+          'çıktılar giren kilo oranında paylaştırılacak (' +
+          gr.map(function (x) {
+            return kacir(x.kod) + ' %' + Math.round(x.girenKg / girenSimdi * 100);
+          }).join(' · ') + ')';
+      } else if (girenSimdi > 0) {
+        gip.className = 'ipucu vurgulu';
+        gip.innerHTML = 'Toplam ' + kgTam(girenSimdi);
       } else {
         gip.className = 'ipucu';
-        gip.innerHTML = 'Depoda ' + kgTam(kalan) + ' ham mal bekliyor' +
-          (girenSimdi > 0.5 && kalan - girenSimdi > 0.5
-            ? ' · bunu gönderirsen ' + kgTam(kalan - girenSimdi) + ' kalır' : '');
+        gip.innerHTML = 'Depoda ' + kgTam(hv) + ' ham mal bekliyor.';
       }
 
       /* --- eleme ücreti: kilo başına ↔ toplam --- */
       var tip = (($('input[name=ucretTipi]:checked', p) || {}).value) || 'kg';
       var ucretGirilen = sayi('f_ucret');
-      var girenKg = sayi('f_giren');
-      var ucretToplam = tip === 'kg' ? ucretGirilen * girenKg : ucretGirilen;
-      el('f_ucret_birim').textContent = tip === 'kg' ? 'T/kg' : 'T';
+      var girenKg = girenToplam();
+      var ucretToplam = H.giderTutari(tip, ucretGirilen, girenKg);
+      el('f_ucret_birim').textContent = H.giderBirimiAdi(tip);
       var uip = el('f_ucret_ipucu');
       // Alım fiyatından pahalı eleme gerçekçi değil — büyük ihtimalle
       // toplam tutar yanlışlıkla "kilo başına" alanına yazılmıştır.
-      var seciliP = partiler.find(function (x) { return x.id === deger('f_parti'); });
-      var alimFiyat = seciliP ? seciliP.birimFiyat : 0;
-      var sacma = tip === 'kg' && alimFiyat > 0 && ucretGirilen > alimFiyat;
+      // Birden çok parti varsa ağırlıklı ortalama alım fiyatı
+      var alimFiyat = 0, agirlik = 0;
+      girdiler().forEach(function (x) {
+        var pp = partiler.find(function (y) { return y.id === x.partiId; });
+        if (!pp) return;
+        alimFiyat += (pp.birimFiyat || 0) * x.girenKg;
+        agirlik += x.girenKg;
+      });
+      alimFiyat = agirlik > 0 ? alimFiyat / agirlik : 0;
+      // Kilo başına düşen eleme ücreti, nohudun kilo fiyatını geçemez
+      var etkinKg = girenKg > 0 ? ucretToplam / girenKg : 0;
+      var sacma = tip !== 'goturu' && alimFiyat > 0 && etkinKg > alimFiyat;
 
       if (sacma) {
         uip.className = 'ipucu hata';
-        uip.innerHTML = '⚠️ Kilo başına ' + n0(ucretGirilen) + ' T, nohudun alım fiyatından ' +
-          '(' + n0(alimFiyat) + ' T/kg) pahalı. Toplam tutarı buraya yazmış olabilirsin — ' +
-          'öyleyse yukarıdan <b>Toplam tutar</b>\u0027ı seç.';
+        uip.innerHTML = '⚠️ Kilo başına ' + n0(etkinKg) + ' T düşüyor; nohudun alım fiyatı ' +
+          n0(alimFiyat) + ' T/kg. Eleme nohuttan pahalı olamaz — ' +
+          'birim yanlış olabilir, <b>Götürü</b>\u0027yü dene.';
       } else if (ucretGirilen > 0) {
         uip.className = 'ipucu vurgulu';
-        if (tip === 'kg') {
-          uip.innerHTML = girenKg > 0
-            ? n0(ucretGirilen) + ' T/kg × ' + kgTam(girenKg) + ' = <b>' + A.T(ucretToplam) + '</b>' +
-              (kasa2.ortKur > 0 ? ' ≈ ' + A.U(ucretToplam / kasa2.ortKur) : '')
-            : 'Giren miktarı yaz, toplam kendiliğinden çıkar';
-        } else {
-          uip.innerHTML = A.Tk(ucretToplam) +
-            (girenKg > 0 ? ' — kilo başına <b>' + n0(ucretToplam / girenKg) + ' T/kg</b>' : '') +
+        if (tip === 'goturu') {
+          uip.innerHTML = A.T(ucretToplam) +
+            (girenKg > 0 ? ' — kilo başına <b>' + n0(etkinKg) + ' T/kg</b>' : '') +
             (kasa2.ortKur > 0 ? ' ≈ ' + A.U(ucretToplam / kasa2.ortKur) : '');
+        } else if (girenKg > 0) {
+          uip.innerHTML = n0(ucretGirilen) + ' ' + H.giderBirimiAdi(tip) + ' × ' +
+            (tip === 'ton' ? n0(girenKg / 1000) + ' ton' : kgTam(girenKg)) +
+            ' = <b>' + A.T(ucretToplam) + '</b>' +
+            (kasa2.ortKur > 0 ? ' ≈ ' + A.U(ucretToplam / kasa2.ortKur) : '');
+        } else {
+          uip.innerHTML = 'Giren miktarı yaz, toplam kendiliğinden çıkar';
         }
       } else {
         uip.className = 'ipucu';
-        uip.innerHTML = tip === 'kg'
-          ? 'Elemeciye kilo başına ödediğin fiyat'
-          : 'Eleme için ödediğin toplam tutar';
+        uip.innerHTML = tip === 'goturu'
+          ? 'Eleme işinin tamamı için anlaştığın tutar'
+          : 'Elemeciye ' + (tip === 'ton' ? 'ton' : 'kilo') + ' başına ödediğin fiyat';
+      }
+
+      tumu();
+      var altT = altToplam();
+      var kaliteSayisi = kaliteler().filter(function (x) { return x.kg > 0; }).length;
+      var aip = el('f_alt_ipucu');
+      if (aip) {
+        aip.className = altT > 0 ? 'ipucu vurgulu' : 'ipucu';
+        aip.innerHTML = altT > 0
+          ? 'Toplam <b>' + kgTam(altT) + '</b>' +
+            (kaliteSayisi > 1 ? ' · ' + kaliteSayisi + ' kalite' : '')
+          : 'Farklı fiyattan satılacaksa kaliteleri ayır — her biri kendi fiyatıyla satılır.';
       }
 
       var t = tamamMi();
       el('sonucAlanlari').style.display = t ? '' : 'none';
-      var giren = sayi('f_giren'), ust = sayi('f_ust'), alt = sayi('f_alt'), fire = sayi('f_fire');
+      var giren = girenToplam(), ust = sayi('f_ust'), alt = altToplam(), fire = sayi('f_fire');
       var d = el('denetim');
       if (!t) {
         d.innerHTML = giren > 0
@@ -3721,76 +4803,425 @@ window.NOHUT_TUZ = 'nohut-ithalat-takip-v1';
       d.innerHTML = h;
     }
 
+    girdiSatirlariniYaz();
+    if (!k && onSecili && el('gi_' + onSecili)) {
+      el('gi_' + onSecili).value = n0(kalanHam[onSecili] || 0);
+    }
+
+    (function () {
+      var mevcut = k ? H.altKalemleri(k) : [];
+      if (!mevcut.length) mevcut = [{}];
+      mevcut.forEach(function (kl, n) { kaliteSatiri(kl, n === 0); });
+    })();
+    el('kaliteEkle').onclick = function () {
+      var d = kaliteSatiri({}, false);
+      $('.kalite-ad', d).focus();
+      tazele();
+    };
+
     bagla(p, !!k, 'elemeler', id, function () {
-      var giren = sayi('f_giren');
-      if (giren <= 0) return hata('Elemeye giren miktarı gir');
+      var gr = girdiler();
+      var giren = girenToplam();
+      if (giren <= 0) return hata('En az bir partiden giren miktarı gir');
       var t = tamamMi();
       var kayit = {
         tarih: deger('f_tarih') || bugun(),
-        partiId: deger('f_parti'),
+        no: deger('f_kayitNo'),
+        partiler: gr.map(function (x) { return { partiId: x.partiId, girenKg: x.girenKg }; }),
+        partiId: gr[0].partiId,          // eski uyumluluk
         girenKg: giren,
         tamamlandi: t,
         ustKg: t ? sayi('f_ust') : 0,
-        altKg: t ? sayi('f_alt') : 0,
+        altKg: t ? altToplam() : 0,
+        altKalemler: t ? kaliteler().filter(function (x) { return x.kg > 0; }) : [],
         fireKg: t ? sayi('f_fire') : 0,
-        ucretTipi: (($('input[name=ucretTipi]:checked', p) || {}).value) || 'kg',
+        ucretTipi: (($('input[name=ucretTipi]:checked', p) || {}).value) || 'goturu',
         ucretBirim: 0,
         ucret: 0,
         not: deger('f_not')
       };
-      if (kayit.ucretTipi === 'kg') {
-        kayit.ucretBirim = sayi('f_ucret');
-        kayit.ucret = kayit.ucretBirim * giren;
-      } else {
-        kayit.ucret = sayi('f_ucret');
-        kayit.ucretBirim = giren > 0 ? kayit.ucret / giren : 0;
-      }
+      kayit.ucretBirim = sayi('f_ucret');
+      kayit.ucret = H.giderTutari(kayit.ucretTipi, kayit.ucretBirim, giren);
       if (t && (kayit.ustKg + kayit.altKg + kayit.fireKg) <= 0) {
         return hata('Eleme sonuçlarını gir (ya da "eleme bitti" işaretini kaldır)');
       }
       if (k) V.guncelle('elemeler', id, kayit); else V.ekle('elemeler', kayit);
       tamamla(k ? 'Eleme güncellendi' : 'Eleme kaydedildi');
-    }, { __hepsi: tazele });
+    }, ipuclari);
   }
 
   /* ============================================================
-     8MM ALTI SATIŞI
+     8MM ALTI SATIŞI — birden çok partiden, tek kayıtta
+
+     Elek altı genelde parti parti değil, toplu satılır. Kalite adına
+     göre bütün partilerin stoğu havuzda toplanır; satış eskiden yeniye
+     (FIFO) dağıtılır. Hangi partiden ne kadar düştüğü kaydedilir —
+     çünkü bu gelir o partinin 8mm+ maliyetinden mahsup edilir.
      ============================================================ */
   function formAltSatis(id, onSecili) {
     var k = id ? V.bul('altSatislar', id) : null;
     var veri = V.hepsi();
     var kasa = H.kasa(veri);
-    var ozetler = H.tumPartiler(veri).filter(function (o) {
-      return o.altStokKg > 0.5 || (k && k.partiId === o.parti.id);
-    });
-    if (!ozetler.length) {
+    var havuz = H.altStokHavuzu(veri, k ? k.id : null);
+
+    if (!havuz.length) {
       return A.panelAc('8mm altı satışı', '<div class="bos-durum"><div class="simge">🪙</div>' +
         '<p>Satılabilir 8mm altı nohut görünmüyor.<br>' +
         'Önce bir eleme kaydı gir — 8mm altı oradan depoya girer.</p></div>');
     }
-    var secilen = k ? k.partiId : (onSecili || ozetler[0].parti.id);
-    var stokHar = {};
-    ozetler.forEach(function (o) { stokHar[o.parti.id] = o.altStokKg + (k && k.partiId === o.parti.id ? k.kg : 0); });
+
+    var govde =
+      alan({ id: 'f_tarih', etiket: 'Tarih', tip: 'date', deger: k ? k.tarih : bugun() }) +
+      '<h2 class="bolum" style="margin-top:4px">Satılan kaliteler</h2>' +
+      '<div class="ipucu" style="margin:-4px 0 10px">Stok, bütün partilerden toplanır. ' +
+      'Satış en eski partiden başlayarak düşülür.</div>' +
+      '<div id="satirlar"></div>' +
+      '<button class="dugme tam" type="button" id="kaliteEkleD">+ Kalite ekle</button>' +
+      '<div id="satisOzet"></div>' +
+      '<div id="dagilimKutu"></div>' +
+      alan({ id: 'f_alici', etiket: 'Alıcı', deger: k ? k.alici : '', yerTutucu: 'örn. Tahran alıcı' });
+
+    var p = A.panelAc(k ? '8mm altı satışını düzenle' : '8mm altı satışı', govde, ayak(!!k));
+
+    var sayac = 0;
+
+    function satirYaz(kalem) {
+      var i = ++sayac;
+      var secim = kalem && kalem.ad ? kalem.ad : havuz[0].ad;
+      var d = document.createElement('div');
+      d.className = 'alim-satir';
+      d.dataset.satir = i;
+      d.innerHTML =
+        '<div class="alim-tepe">' +
+          '<span class="alim-no">' + i + '</span>' +
+          '<select id="sk' + i + '" class="kalite-sec">' +
+            havuz.map(function (x) {
+              return '<option value="' + kacir(x.ad) + '"' + (x.ad === secim ? ' selected' : '') +
+                '>' + kacir(x.ad) + ' — ' + kgTam(x.kalanKg) + ' var (' +
+                x.partiler.length + ' parti)</option>';
+            }).join('') +
+          '</select>' +
+          '<button type="button" class="alim-sil" aria-label="Kaldır">✕</button>' +
+        '</div>' +
+        '<div class="ikili">' +
+          '<div class="onek"><input type="text" inputmode="decimal" data-sayi id="sg' + i + '" ' +
+            'placeholder="kg" value="' + (kalem && kalem.kg ? kalem.kg : '') + '">' +
+            '<span class="birim">kg</span></div>' +
+          '<div class="onek"><input type="text" inputmode="decimal" data-sayi id="sf' + i + '" ' +
+            'placeholder="fiyat" value="' + (kalem && kalem.birimFiyat ? kalem.birimFiyat : '') + '">' +
+            '<span class="birim">T/kg</span></div>' +
+        '</div>' +
+        '<div class="alim-alt"><span class="alim-tutar" id="st' + i + '">—</span>' +
+          '<button type="button" class="dugme kucuk" data-tumu="' + i + '">Tümü</button></div>' +
+        '<div class="ipucu" id="su' + i + '"></div>';
+      el('satirlar').appendChild(d);
+
+      $('.alim-sil', d).onclick = function () {
+        if (el('satirlar').children.length <= 1) return hata('En az bir satır olmalı');
+        d.remove(); tazele();
+      };
+      $('[data-tumu]', d).onclick = function () {
+        var ad = deger('sk' + i);
+        var h = havuz.find(function (x) { return x.ad === ad; });
+        if (!h) return;
+        // aynı kaliteyi başka satır da kullanıyorsa onu düş
+        var baska = 0;
+        satirlar().forEach(function (r) { if (r.no !== String(i) && r.ad === ad) baska += r.kg; });
+        el('sg' + i).value = n0(Math.max(0, h.kalanKg - baska));
+        el('sg' + i).dispatchEvent(new Event('input', { bubbles: true }));
+      };
+      A.sayiAlanlariniBagla(p, ipuclari);
+      return d;
+    }
+
+    function satirlar() {
+      return Array.prototype.map.call(el('satirlar').children, function (d) {
+        var i = d.dataset.satir;
+        var kg = sayi('sg' + i), fi = sayi('sf' + i);
+        return { no: i, ad: deger('sk' + i), kg: kg, birimFiyat: fi, tutar: kg * fi };
+      });
+    }
+
+    /* Her kalite için FIFO dağılımı — satırlar aynı kaliteyi paylaşabilir */
+    function dagit() {
+      var istenen = {};
+      satirlar().forEach(function (r) {
+        if (r.kg > 0) istenen[r.ad] = (istenen[r.ad] || 0) + r.kg;
+      });
+      var sonuc = {}, eksikler = [];
+      Object.keys(istenen).forEach(function (ad) {
+        var d = H.altDagit(havuz, ad, istenen[ad]);
+        sonuc[ad] = d.dagilim;
+        if (d.eksik > 0.5) eksikler.push({ ad: ad, eksik: d.eksik });
+      });
+      return { sonuc: sonuc, eksikler: eksikler, istenen: istenen };
+    }
+
+    function tazele() {
+      var sr = satirlar();
+      var g = el('satirlar').children;
+      for (var j = 0; j < g.length; j++) {
+        $('.alim-sil', g[j]).style.visibility = g.length > 1 ? '' : 'hidden';
+      }
+
+      var d = dagit();
+      var toplamKg = 0, toplamT = 0;
+      sr.forEach(function (r) {
+        el('st' + r.no).textContent = r.tutar > 0 ? A.T(r.tutar) : '—';
+        var h = havuz.find(function (x) { return x.ad === r.ad; });
+        var kalan = h ? h.kalanKg : 0;
+        var u = el('su' + r.no);
+        var eks = d.eksikler.find(function (x) { return x.ad === r.ad; });
+        if (eks) {
+          u.className = 'ipucu hata';
+          u.innerHTML = '⚠️ ' + kacir(r.ad) + ' stoğu yetmiyor — toplam ' + kgTam(kalan) + ' var';
+        } else {
+          u.className = 'ipucu';
+          u.innerHTML = kalan > 0.5 ? 'Havuzda ' + kgTam(kalan) : '';
+        }
+        toplamKg += r.kg; toplamT += r.tutar;
+      });
+
+      el('satisOzet').innerHTML = toplamT > 0
+        ? '<div class="sonuc-kutu" style="margin:12px 0 4px">' +
+          '<div class="baslik">' + sr.filter(function (x) { return x.kg > 0; }).length +
+            ' kalite · ' + kgTam(toplamKg) + '</div>' +
+          '<div class="buyuk" style="font-size:24px">' + A.Tk(toplamT) + '</div>' +
+          '<div class="yan">' + A.T(toplamT) +
+            (kasa.ortKur > 0 ? ' ≈ ' + A.U(toplamT / kasa.ortKur) : '') + '</div>' +
+          '<div class="not">Ortalama ' + n0(toplamKg > 0 ? toplamT / toplamKg : 0) + ' T/kg' +
+            (d.eksikler.length ? '<br><b style="color:var(--eksi)">⚠️ Stoktan fazla satış var</b>' : '') +
+          '</div></div>'
+        : '';
+
+      /* hangi partiden ne kadar düşecek — kullanıcı kaydetmeden görsün */
+      var satirlarHtml = [];
+      Object.keys(d.sonuc).forEach(function (ad) {
+        d.sonuc[ad].forEach(function (x) {
+          satirlarHtml.push('<div class="dagilim-satir">' +
+            '<span class="d-parti">' + kacir(x.kod) + '</span>' +
+            '<span class="d-kalite">' + kacir(ad) + '</span>' +
+            '<span class="d-kg">' + kgTam(x.kg) + '</span></div>');
+        });
+      });
+      el('dagilimKutu').innerHTML = satirlarHtml.length
+        ? '<div class="kart" style="margin-top:10px"><div class="kart-ic">' +
+          '<div class="kucuk-yazi" style="margin-bottom:8px">' +
+          '<b>Hangi partiden düşecek</b> — en eskiden başlayarak</div>' +
+          satirlarHtml.join('') + '</div></div>'
+        : '';
+    }
+
+    var ipuclari = { __hepsi: tazele };
+
+    el('kaliteEkleD').onclick = function () { satirYaz(null); tazele(); };
+
+    (function () {
+      var mevcut = k ? H.satisKalemleri(k) : [];
+      if (mevcut.length) {
+        // düzenlemede kaliteye göre topla (parti dağılımı yeniden hesaplanacak)
+        var topla = {};
+        mevcut.forEach(function (x) {
+          if (!topla[x.ad]) topla[x.ad] = { ad: x.ad, kg: 0, birimFiyat: x.birimFiyat };
+          topla[x.ad].kg += x.kg;
+        });
+        Object.keys(topla).forEach(function (a) { satirYaz(topla[a]); });
+      } else {
+        satirYaz(null);
+      }
+    })();
+
+    bagla(p, !!k, 'altSatislar', id, function () {
+      var sr = satirlar().filter(function (r) { return r.kg > 0; });
+      if (!sr.length) return hata('En az bir kalite için miktar gir');
+      var eksikFiyat = sr.filter(function (r) { return !(r.birimFiyat > 0); });
+      if (eksikFiyat.length) return hata(eksikFiyat.length + ' satırda fiyat eksik');
+
+      var d = dagit();
+      if (d.eksikler.length) {
+        return hata(d.eksikler[0].ad + ' stoğu yetmiyor');
+      }
+
+      /* Kaliteye göre FIFO dağılımını partili kalemlere aç */
+      var kalemler = [];
+      var fiyatlar = {};
+      sr.forEach(function (r) { fiyatlar[r.ad] = r.birimFiyat; });
+      Object.keys(d.sonuc).forEach(function (ad) {
+        d.sonuc[ad].forEach(function (x) {
+          kalemler.push({
+            partiId: x.partiId, ad: ad, kg: x.kg,
+            birimFiyat: fiyatlar[ad], tutar: x.kg * fiyatlar[ad]
+          });
+        });
+      });
+
+      var toplamKg = 0, toplamT = 0;
+      kalemler.forEach(function (x) { toplamKg += x.kg; toplamT += x.tutar; });
+
+      var partiIds = [];
+      kalemler.forEach(function (x) {
+        if (partiIds.indexOf(x.partiId) === -1) partiIds.push(x.partiId);
+      });
+
+      var kayit = {
+        tarih: deger('f_tarih') || bugun(),
+        kalemler: kalemler,
+        partiId: partiIds[0] || null,     // eski uyumluluk
+        partiIds: partiIds,
+        kg: toplamKg, tutar: toplamT,
+        birimFiyat: toplamKg > 0 ? toplamT / toplamKg : 0,
+        alici: deger('f_alici')
+      };
+      if (k) V.guncelle('altSatislar', id, kayit); else V.ekle('altSatislar', kayit);
+      tamamla((k ? 'Satış güncellendi' : 'Satış kaydedildi') +
+              (partiIds.length > 1 ? ' · ' + partiIds.length + ' partiden' : ''));
+    }, ipuclari);
+
+    tazele();
+  }
+
+  /* ============================================================
+     GENEL GİDER — seyahat ve işletme masrafları
+
+     Otel, uçak bileti, yeme içme… Kasadan düşer ama hiçbir partinin
+     maliyetine binmez. Bu ayrım önemli: karıştırılırsa USD/ton
+     maliyet rakamı bozulur ve yanlış fiyat verilir.
+     ============================================================ */
+  function formGenelGider(id) {
+    var k = id ? V.bul('genelGiderler', id) : null;
+    var kasa = H.kasa(V.hepsi());
+    var geziler = V.geziAdlari();
+
+    var govde =
+      '<div class="ikili">' +
+        alan({ id: 'f_tarih', etiket: 'Tarih', tip: 'date', deger: k ? k.tarih : bugun() }) +
+        alan({ id: 'f_kategori', etiket: 'Kategori', tip: 'secim',
+               secenekler: H.GENEL_GIDER_KATEGORILERI.map(function (x) {
+                 return { deger: x.ad, ad: x.simge + '  ' + x.ad };
+               }), deger: k ? k.kategori : 'Otel / konaklama' }) +
+      '</div>' +
+      '<div class="alan"><label>Para birimi</label><div class="secim-satir">' +
+        [['TMN', 'Tümen'], ['USD', 'Dolar']].map(function (d) {
+          return '<label><input type="radio" name="pb" value="' + d[0] + '"' +
+            ((k ? k.paraBirimi : 'TMN') === d[0] ? ' checked' : '') + '><span>' + d[1] + '</span></label>';
+        }).join('') + '</div></div>' +
+      alan({ id: 'f_tutar', etiket: 'Tutar', tip: 'sayi', deger: k ? k.tutar : '' }) +
+      '<div class="alan">' +
+        '<label for="f_gezi">Gezi / dönem</label>' +
+        '<input type="text" id="f_gezi" list="geziListesi" autocomplete="off" ' +
+          'placeholder="örn. Ağustos 2026 İran" value="' + kacir(k ? (k.gezi || '') : '') + '">' +
+        '<datalist id="geziListesi">' +
+          geziler.map(function (a) { return '<option value="' + kacir(a) + '">'; }).join('') +
+        '</datalist>' +
+        '<div class="ipucu">Aynı adı kullanırsan o gezinin toplam masrafını raporda görürsün.</div>' +
+      '</div>' +
+      alan({ id: 'f_aciklama', etiket: 'Açıklama', deger: k ? k.aciklama : '',
+             yerTutucu: 'örn. Tahran 3 gece' }) +
+      '<div class="uyari-serit"><span class="simge">ℹ️</span><div>' +
+      '<b>Bu gider mala binmez</b>Kasadan düşer ama hiçbir partinin maliyetine ' +
+      'eklenmez. Nohudun USD/ton maliyeti bundan etkilenmez.</div></div>';
+
+    var p = A.panelAc(k ? 'Genel gideri düzenle' : 'Genel gider', govde, ayak(!!k));
+
+    bagla(p, !!k, 'genelGiderler', id, function () {
+      var tutar = sayi('f_tutar');
+      if (tutar <= 0) return hata('Tutarı gir');
+      var kayit = {
+        tarih: deger('f_tarih') || bugun(),
+        kategori: deger('f_kategori'),
+        paraBirimi: ($('input[name=pb]:checked', p) || {}).value || 'TMN',
+        tutar: tutar,
+        gezi: deger('f_gezi'),
+        aciklama: deger('f_aciklama')
+      };
+      if (k) V.guncelle('genelGiderler', id, kayit); else V.ekle('genelGiderler', kayit);
+      tamamla(k ? 'Gider güncellendi' : 'Genel gider kaydedildi');
+    }, {
+      __hepsi: function () {
+        var t = sayi('f_tutar');
+        var pb = ($('input[name=pb]:checked', p) || {}).value || 'TMN';
+        var ip = el('f_tutar_ipucu');
+        ip.className = t > 0 ? 'ipucu vurgulu' : 'ipucu';
+        ip.innerHTML = t > 0
+          ? (pb === 'USD' ? A.U(t)
+             : A.T(t) + (kasa.ortKur > 0 ? ' ≈ ' + A.U(t / kasa.ortKur) : ''))
+          : '';
+      }
+    });
+    Array.prototype.forEach.call(p.querySelectorAll('input[name=pb]'), function (r) {
+      r.onchange = function () { el('f_tutar').dispatchEvent(new Event('input')); };
+    });
+  }
+
+  /* ============================================================
+     HAM SATIŞ — elenmeden İran içinde satılan mal
+
+     Maliyet kiloya göre paylaştırılır: satılan hamın payı partiden
+     düşer, kalan pay elenen mala biner. Böylece hem ham satışın kârı
+     görünür hem de 8mm+ maliyeti şişmez.
+     ============================================================ */
+  function formHamSatis(id, onSecili) {
+    var k = id ? V.bul('hamSatislar', id) : null;
+    var veri = V.hepsi();
+    var kasa = H.kasa(veri);
+
+    var ozetler = H.tumPartiler(veri).filter(function (o) {
+      return o.elenmemisKg > 0.5 || (k && k.partiId === o.parti.id);
+    });
+    if (!ozetler.length) {
+      return A.panelAc('Ham satış', '<div class="bos-durum"><div class="simge">🌾</div>' +
+        '<p>Satılabilir elenmemiş ham mal görünmüyor.<br>' +
+        'Partinin tamamı elenmiş ya da zaten satılmış.</p></div>');
+    }
+
+    var stok = {};
+    ozetler.forEach(function (o) {
+      stok[o.parti.id] = o.elenmemisKg + (k && k.partiId === o.parti.id ? (Number(k.kg) || 0) : 0);
+    });
+    var secilen = k ? k.partiId : (onSecili && stok[onSecili] ? onSecili : ozetler[0].parti.id);
 
     var govde =
       '<div class="ikili">' +
         alan({ id: 'f_tarih', etiket: 'Tarih', tip: 'date', deger: k ? k.tarih : bugun() }) +
         alan({ id: 'f_parti', etiket: 'Hangi partiden', tip: 'secim', deger: secilen,
                secenekler: ozetler.map(function (o) {
-                 return { deger: o.parti.id, ad: o.parti.kod + ' — ' + kgTam(stokHar[o.parti.id]) + ' var' };
+                 return { deger: o.parti.id,
+                          ad: o.parti.kod + ' — ' + kgTam(stok[o.parti.id]) + ' ham var' };
                }) }) +
       '</div>' +
-      alan({ id: 'f_kg', etiket: 'Satılan miktar', tip: 'sayi', birim: 'kg',
-             deger: k ? k.kg : '', yerTutucu: '1.400' }) +
-      alan({ id: 'f_fiyat', etiket: 'Birim fiyat', tip: 'sayi', birim: 'T/kg',
-             deger: k ? k.birimFiyat : '', yerTutucu: '250.000' }) +
-      alan({ id: 'f_tutar', etiket: 'Toplam gelir', tip: 'sayi', birim: 'T', deger: k ? k.tutar : '' }) +
-      alan({ id: 'f_alici', etiket: 'Alıcı', deger: k ? k.alici : '', yerTutucu: 'örn. Tahran alıcı' }) +
-      '<div class="uyari-serit"><span class="simge">💡</span><div>' +
-      '<b>Bu gelir maliyeti düşürür</b>Buraya girdiğin tutar, o partinin 8mm üstü malının ' +
-      'maliyetinden otomatik düşülür — gerçek maliyet böyle çıkar.</div></div>';
+      '<div class="alan">' +
+        '<label for="f_kg">Satılan miktar</label>' +
+        '<div class="onek">' +
+          '<input type="text" inputmode="decimal" data-sayi id="f_kg" autocomplete="off" ' +
+            'placeholder="5.000" value="' + (k ? k.kg : '') + '">' +
+          '<span class="birim">kg</span></div>' +
+        '<button type="button" class="tumu-dugme" id="tumuGonder">' +
+          '<span class="tumu-sol">Kalan ham malın tamamı</span>' +
+          '<span class="tumu-kg" id="tumuKg">—</span></button>' +
+        '<div class="ipucu" id="f_kg_ipucu"></div>' +
+      '</div>' +
+      alan({ id: 'f_fiyat', etiket: 'Satış fiyatı', tip: 'sayi', birim: 'T/kg',
+             deger: k ? k.birimFiyat : '', yerTutucu: '520.000' }) +
+      alan({ id: 'f_tutar', etiket: 'Toplam gelir', tip: 'sayi', birim: 'T',
+             deger: k ? k.tutar : '' }) +
+      alan({ id: 'f_alici', etiket: 'Alıcı', deger: k ? k.alici : '', yerTutucu: 'örn. Tebriz alıcı' }) +
+      '<div id="hamOzet"></div>';
 
-    var p = A.panelAc(k ? '8mm altı satışını düzenle' : '8mm altı satışı', govde, ayak(!!k));
+    var p = A.panelAc(k ? 'Ham satışı düzenle' : 'Ham satış', govde, ayak(!!k));
+
+    function kalanKg() { return stok[deger('f_parti')] || 0; }
+    function seciliOzet() {
+      var pid = deger('f_parti');
+      return ozetler.find(function (o) { return o.parti.id === pid; });
+    }
+
+    el('tumuGonder').onclick = function () {
+      var kalan = kalanKg();
+      if (kalan <= 0.5) return hata('Bu partide elenmemiş ham mal kalmamış');
+      el('f_kg').value = n0(kalan);
+      el('f_kg').dispatchEvent(new Event('input', { bubbles: true }));
+      el('f_kg').focus();
+    };
 
     var elleTutar = false;
     el('f_tutar').addEventListener('input', function () { elleTutar = true; });
@@ -3798,34 +5229,58 @@ window.NOHUT_TUZ = 'nohut-ithalat-takip-v1';
       el(a).addEventListener('input', function () { elleTutar = false; });
     });
 
-    bagla(p, !!k, 'altSatislar', id, function () {
+    bagla(p, !!k, 'hamSatislar', id, function () {
       var kg = sayi('f_kg'), tutar = sayi('f_tutar');
       if (kg <= 0) return hata('Satılan miktarı gir');
       if (tutar <= 0) return hata('Toplam geliri gir');
       var kayit = {
         tarih: deger('f_tarih') || bugun(), partiId: deger('f_parti'),
-        kg: kg, birimFiyat: sayi('f_fiyat') || (tutar / kg), tutar: tutar, alici: deger('f_alici')
+        kg: kg, birimFiyat: sayi('f_fiyat') || (tutar / kg),
+        tutar: tutar, alici: deger('f_alici')
       };
-      if (k) V.guncelle('altSatislar', id, kayit); else V.ekle('altSatislar', kayit);
-      tamamla(k ? 'Satış güncellendi' : 'Satış kaydedildi');
+      if (k) V.guncelle('hamSatislar', id, kayit); else V.ekle('hamSatislar', kayit);
+      tamamla(k ? 'Ham satış güncellendi' : 'Ham satış kaydedildi');
     }, {
       __hepsi: function () {
-        var kg = sayi('f_kg'), fiyat = sayi('f_fiyat');
+        var kalan = kalanKg(), kg = sayi('f_kg'), fiyat = sayi('f_fiyat');
         if (!elleTutar && kg > 0 && fiyat > 0) el('f_tutar').value = n0(kg * fiyat);
         var tutar = sayi('f_tutar');
-        var ip = el('f_tutar_ipucu');
-        ip.innerHTML = tutar > 0 ? Tk(tutar) + (kasa.ortKur > 0 ? ' ≈ ' + U(tutar / kasa.ortKur) : '') : '';
-        ip.className = tutar > 0 ? 'ipucu vurgulu' : 'ipucu';
 
-        var stok = stokHar[deger('f_parti')] || 0;
+        el('tumuKg').textContent = kalan > 0.5 ? kgTam(kalan) : 'yok';
+        el('tumuGonder').disabled = kalan <= 0.5;
+        el('tumuGonder').classList.toggle('pasif', kalan <= 0.5);
+        el('tumuGonder').classList.toggle('secili', kalan > 0.5 && Math.abs(kg - kalan) < 0.5);
+
         var ipk = el('f_kg_ipucu');
-        if (kg > stok + 0.5) {
+        if (kg > kalan + 0.5) {
           ipk.className = 'ipucu hata';
-          ipk.innerHTML = '⚠️ Bu partide sadece ' + kgTam(stok) + ' 8mm altı var.';
+          ipk.innerHTML = '⚠️ Bu partide elenmemiş sadece ' + kgTam(kalan) + ' var.';
         } else {
           ipk.className = 'ipucu';
-          ipk.innerHTML = 'Depoda ' + kgTam(stok) + ' var.';
+          ipk.innerHTML = 'Elenmemiş ' + kgTam(kalan) + ' bekliyor.';
         }
+
+        var ipt = el('f_tutar_ipucu');
+        ipt.className = tutar > 0 ? 'ipucu vurgulu' : 'ipucu';
+        ipt.innerHTML = tutar > 0
+          ? A.Tk(tutar) + (kasa.ortKur > 0 ? ' ≈ ' + A.U(tutar / kasa.ortKur) : '') : '';
+
+        // kâr önizlemesi: bu malın partiden taşıdığı maliyet
+        var o = seciliOzet();
+        var d = el('hamOzet');
+        if (!o || kg <= 0 || tutar <= 0 || o.hamKg <= 0) { d.innerHTML = ''; return; }
+        var birimMaliyet = o.genelGiderTumen / o.hamKg;
+        var maliyet = birimMaliyet * kg;
+        var kar = tutar - maliyet;
+        d.innerHTML = '<div class="sonuc-kutu" style="margin-top:14px">' +
+          '<div class="baslik">Bu satışın kârı</div>' +
+          '<div class="buyuk" style="font-size:24px;color:' +
+            (kar >= 0 ? 'var(--arti)' : 'var(--eksi)') + '">' +
+            (kar < 0 ? '−' : '') + A.T(Math.abs(kar)) + '</div>' +
+          '<div class="yan">satış ' + A.T(tutar) + ' − maliyet ' + A.T(maliyet) + '</div>' +
+          '<div class="not">Bu malın partiden taşıdığı maliyet ' + n0(birimMaliyet) +
+            ' T/kg. Satılan kısmın payı partiden düşülür, kalan pay elenen mala biner — ' +
+            '8mm+ maliyeti bu satıştan etkilenmez.</div></div>';
       }
     });
   }
@@ -3839,8 +5294,11 @@ window.NOHUT_TUZ = 'nohut-ithalat-takip-v1';
     var mevcut = {};
     (k ? (k.kalemler || []) : []).forEach(function (kl) { mevcut[kl.partiId] = kl.kg; });
 
+    var havuz = H.ustStokHavuzu(veri, k ? k.id : null);
     var ozetler = H.tumPartiler(veri).filter(function (o) {
       return o.ustStokKg > 0.5 || mevcut[o.parti.id];
+    }).sort(function (a, b) {
+      return String(a.parti.tarih || '').localeCompare(String(b.parti.tarih || ''));
     });
     if (!ozetler.length) {
       return A.panelAc('Sevkiyat', '<div class="bos-durum"><div class="simge">🚚</div>' +
@@ -3863,13 +5321,23 @@ window.NOHUT_TUZ = 'nohut-ithalat-takip-v1';
           return '<label><input type="radio" name="durum" value="' + d + '"' +
             ((k ? k.durum : 'Hazırlanıyor') === d ? ' checked' : '') + '><span>' + d + '</span></label>';
         }).join('') + '</div></div>' +
+      '<div class="alan"><label>Toplam yüklenecek miktar</label>' +
+        '<div class="onek">' +
+          '<input type="text" inputmode="decimal" data-sayi id="f_toplam" placeholder="0">' +
+          '<span class="birim">kg</span></div>' +
+        '<button type="button" class="tumu-dugme" id="dagitDugme">' +
+          '<span class="tumu-sol">En eski partiden başlayarak dağıt</span>' +
+          '<span class="tumu-kg" id="havuzKg">—</span></button>' +
+        '<div class="ipucu" id="f_toplam_ipucu">Miktarı yaz ve dağıt — ' +
+          'aşağıdaki satırlar kendiliğinden dolar. İstersen elle de düzeltebilirsin.</div>' +
+      '</div>' +
       '<div class="alan"><label>Hangi partiden ne kadar yüklendi?</label>' +
         '<div class="ipucu" style="margin-bottom:8px">Yüklemediğin partileri boş bırak.</div>' +
         ozetler.map(function (o) {
           var stok = o.ustStokKg + (mevcut[o.parti.id] || 0);
           return '<div class="alan" style="margin-bottom:11px">' +
             '<label style="display:flex;justify-content:space-between">' +
-            '<span>' + kacir(o.parti.kod) + (o.parti.satici ? ' · ' + kacir(o.parti.satici) : '') + '</span>' +
+            '<span>' + kacir(o.parti.kod) + ' · ' + A.tarihGoster(o.parti.tarih) + '</span>' +
             '<span style="color:var(--metin3);font-weight:400">' + kgTam(stok) + ' var · ' +
             A.nAkilli(o.usdTon) + ' $/t</span></label>' +
             '<div class="onek"><input type="text" inputmode="decimal" data-sayi ' +
@@ -3894,6 +5362,26 @@ window.NOHUT_TUZ = 'nohut-ithalat-takip-v1';
       return s;
     }
 
+    var havuzToplam = havuz.reduce(function (t, x) { return t + x.kalanKg; }, 0);
+
+    el('dagitDugme').onclick = function () {
+      var istenen = sayi('f_toplam');
+      if (istenen <= 0) return hata('Önce toplam miktarı yaz');
+      var d = H.ustDagit(havuz, istenen);
+      // önce hepsini temizle, sonra dağılımı yaz
+      ozetler.forEach(function (o) { el('kl_' + o.parti.id).value = ''; });
+      d.dagilim.forEach(function (x) {
+        var alan = el('kl_' + x.partiId);
+        if (alan) alan.value = n0(x.kg);
+      });
+      tazele();
+      if (d.eksik > 0.5) {
+        A.bildir('Depoda ' + kgTam(havuzToplam) + ' var — ' + kgTam(d.eksik) + ' eksik kaldı');
+      } else {
+        A.bildir(d.dagilim.length + ' partiden dağıtıldı');
+      }
+    };
+
     function tazele() {
       var s = kalemler();
       var kg = 0, usd = 0, asim = false;
@@ -3916,6 +5404,23 @@ window.NOHUT_TUZ = 'nohut-ithalat-takip-v1';
           if (ip) { ip.className = 'ipucu'; ip.innerHTML = ''; }
         }
       });
+      el('havuzKg').textContent = havuzToplam > 0.5 ? kgTam(havuzToplam) : 'yok';
+      el('dagitDugme').disabled = havuzToplam <= 0.5;
+      el('dagitDugme').classList.toggle('pasif', havuzToplam <= 0.5);
+      var istenen = sayi('f_toplam');
+      var tip = el('f_toplam_ipucu');
+      if (istenen > havuzToplam + 0.5) {
+        tip.className = 'ipucu hata';
+        tip.innerHTML = '⚠️ Depoda toplam ' + kgTam(havuzToplam) + ' 8mm+ mal var.';
+      } else if (istenen > 0) {
+        tip.className = 'ipucu vurgulu';
+        tip.innerHTML = 'Dağıt düğmesine bas — en eski partiden başlayarak bölünür.';
+      } else {
+        tip.className = 'ipucu';
+        tip.innerHTML = 'Miktarı yaz ve dağıt — aşağıdaki satırlar kendiliğinden dolar. ' +
+          'İstersen elle de düzeltebilirsin.';
+      }
+
       var d = el('sevkOzet');
       if (!kg) { d.innerHTML = ''; return; }
       var satis = sayi('f_satis');
@@ -3950,7 +5455,7 @@ window.NOHUT_TUZ = 'nohut-ithalat-takip-v1';
   var FORMLAR = {
     transfer: formTransfer, parti: formParti, masraf: formMasraf,
     eleme: formEleme, altSatis: formAltSatis, sevkiyat: formSevkiyat,
-    giderler: formGiderler
+    giderler: formGiderler, hamSatis: formHamSatis, genelGider: formGenelGider
   };
 
   function ac(tur, param) {
@@ -3958,8 +5463,10 @@ window.NOHUT_TUZ = 'nohut-ithalat-takip-v1';
     if (!f) return;
     // param bir kayıt id'si mi yoksa "bu partiye ekle" mi?
     if (tur === 'giderler') return f(param);
-    if ((tur === 'masraf' || tur === 'eleme' || tur === 'altSatis') && param) {
-      var kendi = V.bul(tur === 'masraf' ? 'masraflar' : tur === 'eleme' ? 'elemeler' : 'altSatislar', param);
+    if ((tur === 'masraf' || tur === 'eleme' || tur === 'altSatis' || tur === 'hamSatis') && param) {
+      var kol = { masraf: 'masraflar', eleme: 'elemeler',
+                  altSatis: 'altSatislar', hamSatis: 'hamSatislar' }[tur];
+      var kendi = V.bul(kol, param);
       if (kendi) f(param);
       else f(null, param);          // parti id'si geldi
       return;
@@ -3968,6 +5475,659 @@ window.NOHUT_TUZ = 'nohut-ithalat-takip-v1';
   }
 
   window.Formlar = { ac: ac, yeniKayitSec: yeniKayitSec };
+})();
+/* ============================================================
+   rapor.js — Yazdırılabilir / PDF rapor üreticisi
+
+   Uygulama ekranını yazdırmak yerine, basıma uygun ayrı bir belge
+   üretir: beyaz zemin, siyah yazı, sayfa başlıkları, taşmayan tablolar.
+
+   Dışarıdan hiçbir kütüphane kullanmaz — tarayıcının kendi
+   "PDF olarak kaydet" özelliği yeter. İnternet gerekmez.
+   ============================================================ */
+(function () {
+  'use strict';
+
+  var A = window.NohutArayuz, H = window.Hesap, V = window.Veri;
+  var n0 = A.n0, T = A.T, Tk = A.Tk, U = A.U, Uton = A.Uton, Utam = A.Utam;
+  var KG = A.KG, kgTam = A.kgTam, yuzde = A.yuzde, tarihGoster = A.tarihGoster, kacir = A.kacir;
+
+  function firma() {
+    return ((V.hepsi().ayarlar || {}).firma || '').trim();
+  }
+
+  function bugunUzun() {
+    var d = new Date();
+    return String(d.getDate()).padStart(2, '0') + '.' +
+           String(d.getMonth() + 1).padStart(2, '0') + '.' + d.getFullYear() + ' ' +
+           String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+  }
+
+  /* ------------------------------------------------------------
+     DÖNEM (tarih aralığı)
+
+     ÖNEMLİ: filtre yalnızca GÖRÜNÜMÜ daraltır. Kasa ortalama kuru ve
+     parti maliyetleri her zaman TAM veriyle hesaplanır — yoksa Ocak'ta
+     alınıp Mart'ta elenen bir partide alım kaybolur, maliyet bozulurdu.
+     ------------------------------------------------------------ */
+
+  function iso(d) {
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') +
+           '-' + String(d.getDate()).padStart(2, '0');
+  }
+
+  function donemler() {
+    var b = new Date();
+    var yil = b.getFullYear(), ay = b.getMonth();
+    return [
+      { anahtar: 'buAy',    ad: 'Bu ay',     bas: iso(new Date(yil, ay, 1)),      bit: iso(b) },
+      { anahtar: 'gecenAy', ad: 'Geçen ay',  bas: iso(new Date(yil, ay - 1, 1)),
+        bit: iso(new Date(yil, ay, 0)) },
+      { anahtar: 'son3',    ad: 'Son 3 ay',  bas: iso(new Date(yil, ay - 2, 1)),  bit: iso(b) },
+      { anahtar: 'buYil',   ad: 'Bu yıl',    bas: yil + '-01-01',                 bit: iso(b) },
+      { anahtar: 'tumu',    ad: 'Tümü',      bas: '',                             bit: '' }
+    ];
+  }
+
+  function aralikta(tarih, a) {
+    if (!a || (!a.bas && !a.bit)) return true;
+    var t = String(tarih || '').slice(0, 10);
+    if (!t) return false;
+    if (a.bas && t < a.bas) return false;
+    if (a.bit && t > a.bit) return false;
+    return true;
+  }
+
+  function donemYazisi(a) {
+    if (!a || (!a.bas && !a.bit)) return 'Tüm kayıtlar';
+    if (a.bas && a.bit) return tarihGoster(a.bas) + ' — ' + tarihGoster(a.bit);
+    if (a.bas) return tarihGoster(a.bas) + '\u0027dan bugüne';
+    return tarihGoster(a.bit) + '\u0027a kadar';
+  }
+
+  function belge(baslik, altBaslik, govde, aralik) {
+    if (aralik !== undefined) {
+      var d = '<span class="b-donem">Dönem: ' + donemYazisi(aralik) + '</span>';
+      altBaslik = altBaslik ? altBaslik + ' · ' + d : d;
+    }
+    return belgeIc(baslik, altBaslik, govde);
+  }
+
+  function belgeIc(baslik, altBaslik, govde) {
+    return '<div class="b-sayfa">' +
+      '<div class="b-tepe">' +
+        '<div>' +
+          (firma() ? '<div class="b-firma">' + kacir(firma()) + '</div>' : '') +
+          '<h1>' + kacir(baslik) + '</h1>' +
+          (altBaslik ? '<div class="b-alt">' + altBaslik + '</div>' : '') +
+        '</div>' +
+        '<div class="b-tarih">' + bugunUzun() + '</div>' +
+      '</div>' +
+      govde +
+      '<div class="b-dip">Nohut İthalat Takip · ' + bugunUzun() + '</div>' +
+    '</div>';
+  }
+
+  function tablo(basliklar, satirlar, hizala) {
+    return '<table class="b-tablo"><thead><tr>' +
+      basliklar.map(function (b, i) {
+        return '<th' + ((hizala && hizala[i] === 'l') ? ' class="sol"' : '') + '>' + b + '</th>';
+      }).join('') + '</tr></thead><tbody>' +
+      satirlar.map(function (s) {
+        return '<tr>' + s.map(function (h, i) {
+          return '<td' + ((hizala && hizala[i] === 'l') ? ' class="sol"' : '') + '>' + h + '</td>';
+        }).join('') + '</tr>';
+      }).join('') + '</tbody></table>';
+  }
+
+  // Genel gider özetini döneme indirger (toplamlar yeniden hesaplanır)
+  function donemeIndirge(tam, aralik) {
+    var liste = tam.liste.filter(function (x) { return aralikta(x.kayit.tarih, aralik); });
+    var toplamT = 0, toplamU = 0, kategori = {}, gezi = {};
+    liste.forEach(function (x) {
+      toplamT += x.tumen; toplamU += x.usd;
+      var kat = x.kayit.kategori || 'Diğer';
+      kategori[kat] = (kategori[kat] || 0) + x.usd;
+      var g = (x.kayit.gezi || '').trim() || 'Belirtilmemiş';
+      if (!gezi[g]) gezi[g] = { ad: g, usd: 0, tumen: 0, adet: 0 };
+      gezi[g].usd += x.usd; gezi[g].tumen += x.tumen; gezi[g].adet++;
+    });
+    return {
+      liste: liste, toplamTumen: toplamT, toplamUsd: toplamU,
+      kategoriler: Object.keys(kategori).map(function (a) { return { ad: a, usd: kategori[a] }; })
+        .sort(function (a, b) { return b.usd - a.usd; }),
+      geziler: Object.keys(gezi).map(function (a) { return gezi[a]; })
+        .sort(function (a, b) { return b.usd - a.usd; })
+    };
+  }
+
+  function kutucuk(liste) {
+    return '<div class="b-kutular">' + liste.map(function (x) {
+      return '<div class="b-kutu"><div class="e">' + x[0] + '</div>' +
+        '<div class="d">' + x[1] + '</div>' +
+        (x[2] ? '<div class="a">' + x[2] + '</div>' : '') + '</div>';
+    }).join('') + '</div>';
+  }
+
+  /* ============================================================
+     RAPORLAR
+     ============================================================ */
+  var URETICILER = {
+
+    /* --- tek parti maliyet kartı --- */
+    parti: function (veri, partiId) {
+      var o = H.parti(veri, partiId);
+      if (!o) return null;
+      var p = o.parti;
+
+      var g = '';
+      g += kutucuk([
+        ['Alınan', kgTam(o.hamKg)],
+        ['8mm üstü', o.ustKg > 0 ? kgTam(o.ustKg) : '—'],
+        ['Randıman', o.elenenKg > 0 ? yuzde(o.randiman) : '—'],
+        ['8mm+ maliyeti', o.ustKg > 0 ? Uton(o.usdTon) + '/ton' : '—']
+      ]);
+
+      g += '<h2>Alımlar</h2>';
+      g += tablo(['Tüccar', 'kg', 'T/kg', 'Tutar', 'Ödeme'],
+        p.alimlar.map(function (a) {
+          var borc = H.satirBorc(a);
+          return [kacir(a.satici || '—'), n0(a.kg), n0(a.birimFiyat), n0(a.tutar),
+                  borc > 0 ? kacir(a.odemeDurumu) + ' ' + n0(borc) : 'Ödendi'];
+        }).concat([['<b>TOPLAM</b>', '<b>' + n0(p.hamKg) + '</b>', '<b>' + n0(p.birimFiyat) + '</b>',
+                    '<b>' + n0(p.tutar) + '</b>', p.borc > 0 ? '<b>' + n0(p.borc) + '</b>' : '—']]),
+        ['l']);
+
+      g += '<h2>Maliyet dökümü</h2>';
+      var satirlar = o.kalemler.map(function (k) {
+        return [kacir(k.ad) + (k.detay ? ' <span class="soluk">(' + kacir(k.detay) + ')</span>' : ''),
+                n0(k.tumen), Utam(k.usd)];
+      });
+      satirlar.push(['<b>Toplam gider</b>', '<b>' + n0(o.giderTumen) + '</b>',
+                     '<b>' + Utam(o.giderUsd) + '</b>']);
+      if (o.hamSatilanKg > 0.5) {
+        satirlar.push(['(−) Ham satılan malın payı (' + kgTam(o.hamSatilanKg) + ')',
+                       '−' + n0(o.hamSatisMaliyetTumen), '−' + Utam(o.hamSatisMaliyetUsd)]);
+      }
+      if (o.kalanMaliyetTumen > 0.5) {
+        satirlar.push(['(−) Henüz elenmemiş malın payı (' + kgTam(o.elenmemisKg) + ')',
+                       '−' + n0(o.kalanMaliyetTumen), '']);
+      }
+      if (o.altGelirTumen > 0) {
+        satirlar.push(['(−) 8mm altı satışı (' + kgTam(o.altSatilanKg) + ')',
+                       '−' + n0(o.altGelirTumen), '−' + Utam(o.altGelirUsd)]);
+      }
+      satirlar.push(['<b>NET MALİYET</b>', '<b>' + n0(o.netTumen) + '</b>',
+                     '<b>' + Utam(o.netUsd) + '</b>']);
+      g += tablo(['Kalem', 'Tümen', 'USD'], satirlar, ['l']);
+
+      if (o.elenenKg > 0) {
+        g += '<h2>Eleme sonucu</h2>';
+        g += tablo(['Çıktı', 'kg', 'Oran'], [
+          ['8mm üstü (ihracatlık)', n0(o.ustKg), yuzde(o.randiman)],
+          ['8mm altı', n0(o.altKg), yuzde(o.altOran)],
+          ['Fire (taş, toprak)', n0(o.fireKg), yuzde(o.fireOran)],
+          ['<b>Elenen toplam</b>', '<b>' + n0(o.elenenKg) + '</b>', '']
+        ], ['l']);
+      }
+
+      var kal = (o.altKaliteler || []).filter(function (x) { return x.cikanKg > 0.5; });
+      if (kal.length && (kal.length > 1 || kal[0].ad !== H.KALITESIZ)) {
+        g += '<h2>8mm altı kaliteleri</h2>';
+        g += tablo(['Kalite', 'Çıkan', 'Satılan', 'Depoda', 'Ort. T/kg', 'Gelir'],
+          kal.map(function (x) {
+            return [kacir(x.ad), n0(x.cikanKg), x.satilanKg > 0.5 ? n0(x.satilanKg) : '—',
+                    x.kalanKg > 0.5 ? n0(x.kalanKg) : '—',
+                    x.ortFiyat > 0 ? n0(x.ortFiyat) : '—',
+                    x.gelirT > 0 ? n0(x.gelirT) : '—'];
+          }), ['l']);
+      }
+
+      if (o.hamSatilanKg > 0.5) {
+        g += '<h2>Ham satış (elenmeden)</h2>';
+        g += tablo(['Kalem', 'Tutar'], [
+          ['Satılan miktar', kgTam(o.hamSatilanKg)],
+          ['Gelir', n0(o.hamGelirTumen) + ' T'],
+          ['Bu malın maliyeti', '−' + n0(o.hamSatisMaliyetTumen) + ' T'],
+          ['<b>' + (o.hamSatisKarTumen >= 0 ? 'Kâr' : 'Zarar') + '</b>',
+           '<b>' + n0(Math.abs(o.hamSatisKarTumen)) + ' T</b>']
+        ], ['l']);
+      }
+
+      if (o.ustKg > 0) {
+        g += '<div class="b-vurgu">' +
+          '<div class="e">8MM ÜSTÜ GERÇEK MALİYETİ</div>' +
+          '<div class="d">' + Uton(o.usdTon) + ' / ton</div>' +
+          '<div class="a">' + n0(o.birimTumen) + ' Tümen / kg · ' +
+            'kullanılan kur 1 USD = ' + n0(o.kullanilanKur) + ' T' +
+            (o.paylastirmaVar ? ' · alım ve masrafların %' +
+              Math.round(o.elenenPay * 100) + "'lik payı bu mala bindi" : '') +
+          '</div></div>';
+      }
+
+      g += '<h2>Bu partiden kalan</h2>';
+      g += tablo(['Durum', 'kg'], [
+        ['Elenmemiş (depoda ham)', n0(o.elenmemisKg)],
+        ['Elemede (sonuç bekliyor)', n0(o.elemedeKg)],
+        ['8mm üstü depoda', n0(o.ustStokKg)],
+        ['8mm altı depoda', n0(o.altStokKg)],
+        ['Yüklendi', n0(o.yuklenenKg)]
+      ], ['l']);
+
+      var eksik = o.giderDurumu && o.giderDurumu.eksikler;
+      if (eksik && eksik.length) {
+        g += '<div class="b-uyari"><b>Dikkat:</b> ' +
+          eksik.map(function (x) { return kacir(x.ad); }).join(', ') +
+          ' girilmemiş. Bu partinin maliyeti olduğundan düşük görünüyor.</div>';
+      }
+
+      return belge('Parti Maliyet Kartı — ' + p.kod,
+        (p.satici ? kacir(p.satici) : '') + (p.bolge ? ' · ' + kacir(p.bolge) : '') +
+        ' · ' + tarihGoster(p.tarih), g);
+    },
+
+    /* --- parti karşılaştırma --- */
+    karsilastirma: function (veri, param, aralik) {
+      var partiler = H.tumPartiler(veri).filter(function (p) {
+        return p.ustKg > 0 && aralikta(p.parti.tarih, aralik);
+      });
+      if (!partiler.length) return null;
+      partiler.sort(function (a, b) { return a.usdTon - b.usdTon; });
+      var g = '<p class="b-not">Ucuzdan pahalıya sıralı. Randıman düşükse maliyet yükselir.</p>';
+      g += tablo(['Parti', 'Satıcı', 'USD/ton', 'Randıman', 'Fire', '8mm+ kg', 'Alım T/kg'],
+        partiler.map(function (o) {
+          return [kacir(o.parti.kod), kacir(o.parti.satici || '—'),
+                  '<b>' + A.n2(o.usdTon) + '</b>', yuzde(o.randiman, 0), yuzde(o.fireOran, 1),
+                  n0(o.ustKg), n0(o.parti.birimFiyat)];
+        }), ['l', 'l']);
+      return belge('Parti Karşılaştırma', partiler.length + ' elenmiş parti', g, aralik);
+    },
+
+    /* --- stok --- */
+    stok: function (veri) {
+      var st = H.stok(veri);
+      var g = kutucuk([
+        ['Ham (elenmemiş)', kgTam(st.ham)],
+        ['Elemede', kgTam(st.elemede)],
+        ['8mm+ depoda', kgTam(st.ust)],
+        ['8mm− depoda', kgTam(st.alt)],
+        ['Yüklendi', kgTam(st.yuklenen)],
+        ['Toplam fire', kgTam(st.fire)]
+      ]);
+      var aktif = st.partiler.filter(function (p) {
+        return p.elenmemisKg > 0.5 || p.elemedeKg > 0.5 || p.ustStokKg > 0.5 || p.altStokKg > 0.5;
+      });
+      if (aktif.length) {
+        g += '<h2>Parti bazında elde kalan</h2>';
+        g += tablo(['Parti', 'Ham', 'Elemede', '8mm+', '8mm−', 'Değeri (USD)'],
+          aktif.map(function (o) {
+            return [kacir(o.parti.kod),
+                    o.elenmemisKg > 0.5 ? n0(o.elenmemisKg) : '—',
+                    o.elemedeKg > 0.5 ? n0(o.elemedeKg) : '—',
+                    o.ustStokKg > 0.5 ? n0(o.ustStokKg) : '—',
+                    o.altStokKg > 0.5 ? n0(o.altStokKg) : '—',
+                    o.ustStokKg > 0.5 ? Utam(o.ustStokKg * o.birimUsd) : '—'];
+          }), ['l']);
+      }
+      return belgeIc('Stok Raporu', 'Mal nerede, ne kadar · bugün itibarıyla', g);
+    },
+
+    /* --- tüccarlar --- */
+    tuccarlar: function (veri, param, aralik) {
+      var suzulmus = veri;
+      if (aralik && (aralik.bas || aralik.bit)) {
+        suzulmus = Object.assign({}, veri, {
+          partiler: (veri.partiler || []).filter(function (p) {
+            return aralikta(p.tarih, aralik);
+          })
+        });
+      }
+      var liste = H.tuccarlar(suzulmus);
+      if (!liste.length) return null;
+      var borc = 0;
+      liste.forEach(function (t) { borc += t.borc; });
+      var g = kutucuk([
+        ['Tüccar sayısı', String(liste.length)],
+        ['Dönem borcu', borc > 0 ? n0(borc) + ' T' : 'yok'],
+        ['Toplam borç (tüm zamanlar)', n0(H.toplamBorc(veri)) + ' T']
+      ]);
+      if (borc > 0) {
+        g += '<h2>Kime ne kadar borçlusun</h2>';
+        g += tablo(['Tüccar', 'Alınan kg', 'Toplam tutar', 'Borç'],
+          liste.filter(function (t) { return t.borc > 0; })
+            .sort(function (a, b) { return b.borc - a.borc; })
+            .map(function (t) {
+              return [kacir(t.ad), n0(t.kg), n0(t.tutar), '<b>' + n0(t.borc) + '</b>'];
+            }), ['l']);
+      }
+      g += '<h2>Alım fiyatına göre</h2>';
+      g += '<p class="b-not">Mallar karışıp birlikte elendiği için randıman tüccar ' +
+        'bazında ölçülemez — burada alım fiyatı karşılaştırılır.</p>';
+      g += tablo(['Tüccar', 'Ort. T/kg', 'Toplam kg', 'Tutar', 'Alım', 'Borç'],
+        liste.slice().sort(function (a, b) { return a.ortFiyat - b.ortFiyat; })
+          .map(function (t) {
+            return [kacir(t.ad), '<b>' + n0(t.ortFiyat) + '</b>', n0(t.kg), n0(t.tutar),
+                    String(t.alimSayisi), t.borc > 0 ? n0(t.borc) : '—'];
+          }), ['l']);
+      return belge('Tüccar Raporu', liste.length + ' tüccar', g, aralik);
+    },
+
+    /* --- genel giderler --- */
+    genelGiderler: function (veri, param, aralik) {
+      var kasa = H.kasa(veri);
+      var tam = H.genelGiderler(veri, kasa);
+      var gg = donemeIndirge(tam, aralik);
+      if (!gg.liste.length) return null;
+      var g = kutucuk([
+        ['Toplam', U(gg.toplamUsd), n0(gg.toplamTumen) + ' T'],
+        ['Kayıt sayısı', String(gg.liste.length)]
+      ]);
+      g += '<div class="b-not">Bu tutarlar malın maliyetine dahil değildir. ' +
+        'Kasadan düşerler ama hiçbir partiye dağıtılmazlar.</div>';
+      var gercek = gg.geziler.filter(function (x) { return x.ad !== 'Belirtilmemiş'; });
+      if (gercek.length) {
+        g += '<h2>Geziye göre</h2>';
+        g += tablo(['Gezi / dönem', 'Kayıt', 'Tümen', 'USD'],
+          gg.geziler.map(function (x) {
+            return [kacir(x.ad), String(x.adet), n0(x.tumen), Utam(x.usd)];
+          }), ['l']);
+      }
+      g += '<h2>Kategoriye göre</h2>';
+      g += tablo(['Kategori', 'USD'],
+        gg.kategoriler.map(function (x) { return [kacir(x.ad), Utam(x.usd)]; })
+          .concat([['<b>TOPLAM</b>', '<b>' + Utam(gg.toplamUsd) + '</b>']]), ['l']);
+      g += '<h2>Kayıtlar</h2>';
+      g += tablo(['Tarih', 'Kategori', 'Gezi', 'Açıklama', 'Tutar'],
+        gg.liste.slice().sort(function (a, b) {
+          return (b.kayit.tarih || '').localeCompare(a.kayit.tarih || '');
+        }).map(function (x) {
+          var r = x.kayit;
+          return [tarihGoster(r.tarih), kacir(r.kategori || ''), kacir(r.gezi || '—'),
+                  kacir(r.aciklama || '—'),
+                  r.paraBirimi === 'USD' ? U(r.tutar) : n0(r.tutar) + ' T'];
+        }), ['l', 'l', 'l', 'l']);
+      return belge('Genel Giderler', 'Seyahat ve işletme masrafları', g, aralik);
+    },
+
+    /* --- kasa defteri --- */
+    defter: function (veri, param, aralik) {
+      var kasa = H.kasa(veri);
+      if (!kasa.defter.length) return null;
+
+      /* Dönem başındaki DEVİR bakiyesi: aralıktan önceki son satırın
+         bakiyesi. Muhasebede doğrusu budur — dönem kendi başına okunur. */
+      var devir = 0, oncekiVar = false;
+      kasa.defter.forEach(function (s) {
+        if (aralik && aralik.bas && String(s.tarih || '').slice(0, 10) < aralik.bas) {
+          devir = s.bakiye; oncekiVar = true;
+        }
+      });
+
+      var donemSatirlari = kasa.defter.filter(function (s) {
+        return aralikta(s.tarih, aralik);
+      });
+      if (!donemSatirlari.length) return null;
+
+      var girenT = 0, cikanT = 0;
+      donemSatirlari.forEach(function (s) { girenT += s.giren; cikanT += s.cikan; });
+      var kapanis = donemSatirlari[donemSatirlari.length - 1].bakiye;
+
+      var g = kutucuk([
+        ['Devir bakiye', oncekiVar ? n0(devir) + ' T' : '—'],
+        ['Dönemde giren', n0(girenT) + ' T'],
+        ['Dönemde çıkan', n0(cikanT) + ' T'],
+        ['Kapanış bakiye', n0(kapanis) + ' T']
+      ]);
+      g += '<div class="b-not">Bugünkü bakiye: ' + n0(kasa.bakiye) + ' T · ' +
+        'ortalama kur ' + n0(kasa.ortKur) + ' T/USD</div>';
+
+      g += '<h2>Hareketler</h2>';
+      var satirlar = donemSatirlari.slice().reverse().map(function (s) {
+        return [tarihGoster(s.tarih), kacir(s.tur), kacir(s.aciklama),
+                s.giren ? n0(s.giren) : '—', s.cikan ? n0(s.cikan) : '—', n0(s.bakiye)];
+      });
+      if (oncekiVar) {
+        satirlar.push(['—', '<b>Devir</b>', '<b>Dönem başı bakiye</b>', '—', '—',
+                       '<b>' + n0(devir) + '</b>']);
+      }
+      g += tablo(['Tarih', 'İşlem', 'Açıklama', 'Giren', 'Çıkan', 'Bakiye'],
+        satirlar, ['l', 'l', 'l']);
+      return belge('Kasa Defteri', 'Para giriş ve çıkışı (Tümen)', g, aralik);
+    },
+
+    /* --- sevkiyat --- */
+    sevkiyat: function (veri, id) {
+      var o = H.sevkiyat(veri, id);
+      if (!o) return null;
+      var s = o.sevkiyat;
+      var g = kutucuk([
+        ['Yüklenen', kgTam(o.toplamKg)],
+        ['Maliyet', Uton(o.maliyetUsdTon) + '/ton', U(o.maliyetUsd) + ' toplam']
+      ].concat(o.satisUsd > 0
+        ? [['Satış', U(s.satisUsdTon) + '/ton'],
+           ['Kâr', U(o.karUsd), yuzde(o.karOran, 1)]] : []));
+      g += '<h2>Yüklenen partiler</h2>';
+      g += tablo(['Parti', 'Satıcı', 'kg', 'USD/ton', 'Maliyet'],
+        o.kalemler.map(function (k) {
+          return [kacir(k.kod), kacir(k.satici || '—'), n0(k.kg),
+                  A.n2(k.usdTon), Utam(k.maliyetUsd)];
+        }), ['l', 'l']);
+      return belge('Sevkiyat — ' + (s.no || ''),
+        tarihGoster(s.tarih) + (s.plaka ? ' · ' + kacir(s.plaka) : '') +
+        (s.alici ? ' · ' + kacir(s.alici) : '') + ' · ' + kacir(s.durum || ''), g);
+    },
+
+    /* --- genel özet --- */
+    ozet: function (veri, param, aralik) {
+      var kasa = H.kasa(veri);
+      var st = H.stok(veri);
+      var partiler = st.partiler.filter(function (p) {
+        return aralikta(p.parti.tarih, aralik);
+      });
+      var elenmis = partiler.filter(function (p) { return p.ustKg > 0; });
+      var toplamUst = 0, toplamNetU = 0;
+      elenmis.forEach(function (p) { toplamUst += p.ustKg; toplamNetU += p.netUsd; });
+      var gg = donemeIndirge(H.genelGiderler(veri, kasa), aralik);
+
+      var g = kutucuk([
+        ['Kasa (bugün)', n0(kasa.bakiye) + ' T', '≈ ' + U(kasa.usdKarsilik)],
+        ['Ortalama kur', n0(kasa.ortKur), 'T / 1 USD'],
+        ['Tüccarlara borç', n0(H.toplamBorc(veri)) + ' T'],
+        ['Dönemde alınan parti', String(partiler.length)]
+      ]);
+      if (toplamUst > 0) {
+        g += '<div class="b-not">Dönemdeki partilerin ortalama 8mm+ maliyeti: <b>' +
+          Uton(toplamNetU / toplamUst * 1000) + ' / ton</b></div>';
+      }
+
+      g += '<h2>Stok — bugün itibarıyla</h2>';
+      g += tablo(['Durum', 'kg'], [
+        ['Ham (elenmemiş)', n0(st.ham)], ['Elemede', n0(st.elemede)],
+        ['8mm+ depoda', n0(st.ust)], ['8mm− depoda', n0(st.alt)],
+        ['Yüklendi', n0(st.yuklenen)], ['Fire', n0(st.fire)]
+      ], ['l']);
+
+      if (partiler.length) {
+        g += '<h2>Partiler — dönemde alınan</h2>';
+        g += tablo(['Parti', 'Tarih', 'Satıcı', 'Alınan kg', '8mm+ kg', 'USD/ton'],
+          partiler.slice().sort(function (a, b) {
+            return (b.parti.tarih || '').localeCompare(a.parti.tarih || '');
+          }).map(function (o) {
+            return [kacir(o.parti.kod), tarihGoster(o.parti.tarih),
+                    kacir(o.parti.satici || '—'), n0(o.hamKg),
+                    o.ustKg > 0 ? n0(o.ustKg) : '—',
+                    o.ustKg > 0 ? A.n2(o.usdTon) : '—'];
+          }), ['l', 'l', 'l']);
+      }
+
+      if (gg.toplamUsd > 0) {
+        g += '<h2>Genel giderler — dönemde (mala dahil değil)</h2>';
+        g += tablo(['Kategori', 'USD'],
+          gg.kategoriler.map(function (x) { return [kacir(x.ad), Utam(x.usd)]; })
+            .concat([['<b>TOPLAM</b>', '<b>' + Utam(gg.toplamUsd) + '</b>']]), ['l']);
+      }
+
+      return belge('Genel Özet', 'Kasa, stok, partiler ve maliyetler', g, aralik);
+    }
+  };
+
+  /* ============================================================
+     YAZDIRMA
+     ============================================================ */
+
+  /* Dönem seçimi: dönemli raporlarda önce tarih aralığı sorulur */
+  var sonAralik = null;
+
+  function yazdir(tur, param) {
+    if (!URETICILER[tur]) return A.bildir('Bu rapor bulunamadı');
+    if (!DONEMLI[tur]) return uret(tur, param, null);
+    donemSor(tur, param);
+  }
+
+  function donemSor(tur, param) {
+    var d = donemler();
+    var secili = sonAralik || d[d.length - 1];   // varsayılan: Tümü
+
+    var govde =
+      '<p class="kucuk-yazi" style="margin:0 0 12px">Hangi dönemin raporunu ' +
+        'almak istiyorsun?</p>' +
+      '<div class="donem-izgara">' +
+        d.map(function (x) {
+          return '<button type="button" class="donem-dugme" data-bas="' + x.bas +
+            '" data-bit="' + x.bit + '">' + x.ad + '</button>';
+        }).join('') +
+      '</div>' +
+      '<h2 class="bolum">Kendin seç</h2>' +
+      '<div class="ikili">' +
+        '<div class="alan"><label for="d_bas">Başlangıç</label>' +
+          '<input type="date" id="d_bas" value="' + (secili.bas || '') + '"></div>' +
+        '<div class="alan"><label for="d_bit">Bitiş</label>' +
+          '<input type="date" id="d_bit" value="' + (secili.bit || '') + '"></div>' +
+      '</div>' +
+      '<div class="ipucu" id="d_ozet"></div>';
+
+    var p = A.panelAc('Rapor dönemi', govde,
+      '<button class="dugme" type="button" data-iptal>Vazgeç</button>' +
+      '<button class="dugme ana" type="button" data-tamam>📄 PDF oluştur</button>');
+
+    function guncelle() {
+      var bas = A.el('d_bas').value, bit = A.el('d_bit').value;
+      var o = A.el('d_ozet');
+      if (bas && bit && bas > bit) {
+        o.className = 'ipucu hata';
+        o.textContent = 'Başlangıç, bitişten sonra olamaz.';
+      } else {
+        o.className = 'ipucu vurgulu';
+        o.textContent = donemYazisi({ bas: bas, bit: bit });
+      }
+    }
+    A.el('d_bas').onchange = guncelle;
+    A.el('d_bit').onchange = guncelle;
+    guncelle();
+
+    Array.prototype.forEach.call(p.querySelectorAll('.donem-dugme'), function (b) {
+      b.onclick = function () {
+        A.el('d_bas').value = b.dataset.bas;
+        A.el('d_bit').value = b.dataset.bit;
+        guncelle();
+        Array.prototype.forEach.call(p.querySelectorAll('.donem-dugme'), function (x) {
+          x.classList.remove('secili');
+        });
+        b.classList.add('secili');
+      };
+    });
+
+    A.$('[data-iptal]', p).onclick = A.panelKapat;
+    A.$('[data-tamam]', p).onclick = function () {
+      var bas = A.el('d_bas').value, bit = A.el('d_bit').value;
+      if (bas && bit && bas > bit) return A.bildir('Tarih aralığı ters');
+      sonAralik = { bas: bas, bit: bit };
+      A.panelKapat();
+      uret(tur, param, sonAralik);
+    };
+  }
+
+  function uret(tur, param, aralik) {
+    var uretici = URETICILER[tur];
+    var html = uretici(V.hepsi(), param, aralik);
+    if (!html) return A.bildir('Bu dönemde gösterilecek kayıt yok');
+
+    var kap = document.getElementById('basim');
+    if (!kap) {
+      kap = document.createElement('div');
+      kap.id = 'basim';
+      document.body.appendChild(kap);
+    }
+    kap.innerHTML = html;
+    document.body.classList.add('basiliyor');
+
+    function bitir() {
+      document.body.classList.remove('basiliyor');
+      window.removeEventListener('afterprint', bitir);
+    }
+    window.addEventListener('afterprint', bitir);
+    setTimeout(function () { window.print(); }, 60);
+    setTimeout(bitir, 60000);   // güvenlik ağı
+  }
+
+  var DONEMLI = { ozet: 1, karsilastirma: 1, defter: 1, genelGiderler: 1, tuccarlar: 1 };
+
+  window.Rapor = {
+    yazdir: yazdir, ureticiler: URETICILER,
+    donemler: donemler, donemli: DONEMLI, aralikta: aralikta, donemYazisi: donemYazisi
+  };
+})();
+/* ============================================================
+   guncelleme.js — Program güncellenince haber verir
+
+   Program dosyası değiştiğinde (yeni sürüm derlendiğinde) açık
+   duran pencere eski sürümü göstermeye devam eder. Bu, kişinin
+   "güncellenmemiş gibi duruyor" demesine yol açar.
+
+   Bu dosya, pencere her öne geldiğinde sunucuya sorar; dosya
+   değişmişse üstte bir şerit çıkarır. Form açıkken kendiliğinden
+   yenilemez — yazdığın kaybolmasın.
+   ============================================================ */
+(function () {
+  'use strict';
+
+  if (!/^https?:$/.test(location.protocol)) return;   // yalnızca sunucudan açıldığında
+
+  var ilkSurum = null;
+  var seritVar = false;
+
+  function surumAl() {
+    return fetch('/api/surum', { cache: 'no-store' })
+      .then(function (y) { return y.ok ? y.json() : null; })
+      .then(function (d) { return d && d.surum; })
+      .catch(function () { return null; });
+  }
+
+  function serit() {
+    if (seritVar) return;
+    seritVar = true;
+    var d = document.createElement('div');
+    d.className = 'guncelleme-serit';
+    d.innerHTML =
+      '<span>Programın yeni sürümü hazır.</span>' +
+      '<button type="button">Yenile</button>';
+    d.querySelector('button').onclick = function () { location.reload(); };
+    document.body.appendChild(d);
+  }
+
+  function kontrol() {
+    surumAl().then(function (s) {
+      if (!s) return;
+      if (ilkSurum === null) { ilkSurum = s; return; }
+      if (s !== ilkSurum) serit();
+    });
+  }
+
+  kontrol();
+  document.addEventListener('visibilitychange', function () {
+    if (!document.hidden) kontrol();
+  });
+  window.addEventListener('focus', kontrol);
 })();
 /* ============================================================
    baslat.js — Programı ayağa kaldırır
