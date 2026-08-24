@@ -831,6 +831,297 @@ body.salt-okunur .tepe { padding-top: max(30px, env(safe-area-inset-top)); }
 window.NOHUT_SIFRE_OZETI = 'cb8767df6e31c9f1d0ec6b3380419fe035519c821a4589b264eac6f764113ae5';
 window.NOHUT_TUZ = 'nohut-ithalat-takip-v1';
 /* ============================================================
+   bulut-ayar.js — Supabase bağlantı bilgileri
+
+   Buradaki anahtar "publishable" (yayınlanabilir) anahtardır;
+   tarayıcıya gömülmek için tasarlanmıştır ve tek başına hiçbir
+   veriye erişim vermez. Güvenlik, veritabanındaki satır bazlı
+   kurallarla (RLS) sağlanır: her kullanıcı yalnızca kendi
+   satırını okuyup yazabilir.
+   ============================================================ */
+window.NOHUT_BULUT = {
+  adres: 'https://xcranaiavarxjfnmirie.supabase.co',
+  anahtar: 'sb_publishable_Xfja65X5wqUBp_CX0t02dQ_25p-rLEi',
+  tablo: 'nohut_veri'
+};
+/* ============================================================
+   bulut.js — Supabase ile senkronizasyon
+
+   Tasarım: YEREL ÖNCE (local-first).
+     • Mac'te asıl kayıt diskteki dosyadır; bulut onun kopyasıdır.
+     • İnternet yoksa program çalışmaya devam eder, bağlantı
+       gelince kendiliğinden gönderir.
+     • Telefon/web doğrudan buluta bağlanır.
+
+   Çakışma: her yazmada sunucudaki 'surum' artar. Gönderirken
+   elimizdeki sürümü şart koşarız; başkası araya girdiyse yazma
+   reddedilir ve kullanıcı uyarılır — sessizce üzerine yazmaz.
+   ============================================================ */
+(function (kok) {
+  'use strict';
+
+  var A = window.NOHUT_BULUT || {};
+  var OTURUM_ANAHTARI = 'nohut_bulut_oturum';
+
+  var Bulut = {
+    oturum: null,
+    sonSurum: null,
+    sonHata: null
+  };
+
+  function varMi() { return !!(A.adres && A.anahtar); }
+  Bulut.varMi = varMi;
+
+  /* ---------- oturum saklama ---------- */
+  function oturumYaz(o) {
+    Bulut.oturum = o;
+    try {
+      if (o) localStorage.setItem(OTURUM_ANAHTARI, JSON.stringify(o));
+      else localStorage.removeItem(OTURUM_ANAHTARI);
+    } catch (e) { }
+  }
+  function oturumOku() {
+    try {
+      var h = localStorage.getItem(OTURUM_ANAHTARI);
+      if (h) Bulut.oturum = JSON.parse(h);
+    } catch (e) { }
+    return Bulut.oturum;
+  }
+  Bulut.oturumOku = oturumOku;
+  Bulut.girisliMi = function () { return !!(Bulut.oturum && Bulut.oturum.access_token); };
+
+  /* ---------- istek yardımcısı ---------- */
+  function istek(yol, secenek) {
+    secenek = secenek || {};
+    var basliklar = { 'apikey': A.anahtar, 'Content-Type': 'application/json' };
+    if (Bulut.oturum && Bulut.oturum.access_token) {
+      basliklar['Authorization'] = 'Bearer ' + Bulut.oturum.access_token;
+    }
+    Object.keys(secenek.basliklar || {}).forEach(function (k) {
+      basliklar[k] = secenek.basliklar[k];
+    });
+    return fetch(A.adres + yol, {
+      method: secenek.yontem || 'GET',
+      headers: basliklar,
+      body: secenek.govde ? JSON.stringify(secenek.govde) : undefined,
+      cache: 'no-store'
+    });
+  }
+
+  /* ---------- kimlik ---------- */
+  Bulut.giris = function (eposta, sifre) {
+    return istek('/auth/v1/token?grant_type=password', {
+      yontem: 'POST', govde: { email: eposta, password: sifre }
+    }).then(function (y) { return y.json(); }).then(function (d) {
+      if (!d.access_token) {
+        throw new Error(d.error_description || d.msg || 'Giriş yapılamadı');
+      }
+      oturumYaz(d);
+      return d;
+    });
+  };
+
+  Bulut.cikis = function () {
+    var o = Bulut.oturum;
+    oturumYaz(null);
+    Bulut.sonSurum = null;
+    if (o) istek('/auth/v1/logout', { yontem: 'POST' }).catch(function () { });
+  };
+
+  // Süresi dolan jetonu yenile
+  Bulut.tazele = function () {
+    if (!Bulut.oturum || !Bulut.oturum.refresh_token) return Promise.reject(new Error('oturum yok'));
+    return istek('/auth/v1/token?grant_type=refresh_token', {
+      yontem: 'POST', govde: { refresh_token: Bulut.oturum.refresh_token }
+    }).then(function (y) { return y.json(); }).then(function (d) {
+      if (!d.access_token) throw new Error('oturum tazelenemedi');
+      oturumYaz(d);
+      return d;
+    });
+  };
+
+  Bulut.sifreDegistir = function (yeni) {
+    return jetonlu(function () {
+      return istek('/auth/v1/user', { yontem: 'PUT', govde: { password: yeni } });
+    }).then(function (y) {
+      return y.json().then(function (d) {
+        if (!y.ok) throw new Error(d.msg || d.error_description || 'Şifre değiştirilemedi');
+        return d;
+      });
+    });
+  };
+
+  function kullaniciId() {
+    var o = Bulut.oturum;
+    return o && o.user ? o.user.id : null;
+  }
+  Bulut.kullaniciId = kullaniciId;
+  Bulut.eposta = function () {
+    var o = Bulut.oturum;
+    return o && o.user ? o.user.email : '';
+  };
+
+  /* Jeton süresi dolduysa bir kez tazeleyip tekrar dener */
+  function jetonlu(fn) {
+    return fn().then(function (y) {
+      if (y.status !== 401) return y;
+      return Bulut.tazele().then(fn);
+    });
+  }
+
+  /* ---------- veri ---------- */
+
+  Bulut.oku = function () {
+    var kid = kullaniciId();
+    if (!kid) return Promise.reject(new Error('giriş yapılmamış'));
+    return jetonlu(function () {
+      return istek('/rest/v1/' + A.tablo + '?kullanici=eq.' + kid + '&select=veri,surum,guncelleme,cihaz');
+    }).then(function (y) {
+      if (!y.ok) throw new Error('Buluttan okunamadı (' + y.status + ')');
+      return y.json();
+    }).then(function (satirlar) {
+      if (!satirlar.length) { Bulut.sonSurum = null; return null; }
+      var s = satirlar[0];
+      Bulut.sonSurum = s.surum;
+      return { veri: s.veri, surum: s.surum, guncelleme: s.guncelleme, cihaz: s.cihaz };
+    });
+  };
+
+  /* Buluta yaz. beklenenSurum verilirse ve sunucuda değişmişse
+     yazma yapılmaz — çakışma bildirilir. */
+  Bulut.yaz = function (veri, cihaz) {
+    var kid = kullaniciId();
+    if (!kid) return Promise.reject(new Error('giriş yapılmamış'));
+
+    var govde = { kullanici: kid, veri: veri, cihaz: cihaz || 'bilinmiyor' };
+
+    // Satır yoksa oluştur, varsa sürüm şartıyla güncelle
+    if (Bulut.sonSurum === null || Bulut.sonSurum === undefined) {
+      return jetonlu(function () {
+        return istek('/rest/v1/' + A.tablo, {
+          yontem: 'POST', govde: govde,
+          basliklar: { 'Prefer': 'return=representation,resolution=merge-duplicates' }
+        });
+      }).then(function (y) {
+        if (!y.ok) return y.text().then(function (t) { throw new Error(t.slice(0, 160)); });
+        return y.json();
+      }).then(function (d) {
+        Bulut.sonSurum = d && d[0] ? d[0].surum : 0;
+        return { surum: Bulut.sonSurum };
+      });
+    }
+
+    return jetonlu(function () {
+      return istek('/rest/v1/' + A.tablo +
+        '?kullanici=eq.' + kid + '&surum=eq.' + Bulut.sonSurum, {
+        yontem: 'PATCH',
+        govde: { veri: veri, cihaz: cihaz || 'bilinmiyor' },
+        basliklar: { 'Prefer': 'return=representation' }
+      });
+    }).then(function (y) {
+      if (!y.ok) return y.text().then(function (t) { throw new Error(t.slice(0, 160)); });
+      return y.json();
+    }).then(function (d) {
+      if (!d || !d.length) {
+        var e = new Error('cakisma');
+        e.cakisma = true;
+        throw e;
+      }
+      Bulut.sonSurum = d[0].surum;
+      return { surum: Bulut.sonSurum };
+    });
+  };
+
+  oturumOku();
+
+  if (typeof module !== 'undefined' && module.exports) module.exports = Bulut;
+  else kok.Bulut = Bulut;
+
+})(typeof globalThis !== 'undefined' ? globalThis : this);
+/* ============================================================
+   giris.js — Buluta giriş ekranı
+
+   Kayıtlar Supabase'de tutulur; her cihazdan aynı hesapla girilir.
+   Oturum tarayıcıda saklanır, her açılışta şifre sorulmaz.
+   ============================================================ */
+(function () {
+  'use strict';
+
+  function serit(mesaj, sinif) {
+    var e = document.getElementById('girisHata');
+    if (!e) return;
+    e.className = 'kilit-hata' + (sinif ? ' ' + sinif : '');
+    e.innerHTML = mesaj || '';
+  }
+
+  function ekran(basarili) {
+    var perde = document.createElement('div');
+    perde.className = 'kilit-perde';
+    perde.innerHTML =
+      '<form class="kilit-kutu" autocomplete="on">' +
+        '<div class="kilit-simge">🌰</div>' +
+        '<h1>Nohut İthalat Takip</h1>' +
+        '<p>Kayıtlarına ulaşmak için giriş yap.</p>' +
+        '<input type="email" id="gEposta" placeholder="E-posta" ' +
+          'autocomplete="username" inputmode="email" style="text-align:left;letter-spacing:0">' +
+        '<div style="height:9px"></div>' +
+        '<input type="password" id="gSifre" placeholder="Şifre" ' +
+          'autocomplete="current-password" style="text-align:left;letter-spacing:0">' +
+        '<div class="kilit-hata" id="girisHata"></div>' +
+        '<button type="submit" class="dugme ana tam" id="gDugme">Giriş yap</button>' +
+        '<p style="font-size:12.5px;color:var(--metin2);margin:14px 0 0">' +
+          'Kayıtların internette güvenli biçimde saklanır. ' +
+          'Telefon, tablet, bilgisayar — hepsinden aynı veriye ulaşırsın.</p>' +
+      '</form>';
+    document.body.appendChild(perde);
+
+    var eposta = perde.querySelector('#gEposta');
+    var sifre = perde.querySelector('#gSifre');
+    try {
+      var son = localStorage.getItem('nohut_son_eposta');
+      if (son) { eposta.value = son; sifre.focus(); } else { eposta.focus(); }
+    } catch (e) { eposta.focus(); }
+
+    perde.querySelector('form').addEventListener('submit', function (e) {
+      e.preventDefault();
+      var d = perde.querySelector('#gDugme');
+      if (!eposta.value || !sifre.value) { serit('E-posta ve şifreyi gir.'); return; }
+      d.disabled = true;
+      serit('Giriş yapılıyor…', 'sonuk');
+
+      window.Bulut.giris(eposta.value.trim(), sifre.value).then(function () {
+        try { localStorage.setItem('nohut_son_eposta', eposta.value.trim()); } catch (err) { }
+        perde.remove();
+        basarili();
+      }).catch(function (err) {
+        d.disabled = false;
+        var m = String(err && err.message || '');
+        serit(/Invalid login|invalid_grant|credentials/i.test(m)
+          ? 'E-posta ya da şifre yanlış.'
+          : (/fetch|network|Failed/i.test(m)
+             ? 'İnternete bağlanılamadı. Bağlantını kontrol et.'
+             : m || 'Giriş yapılamadı.'));
+        sifre.value = ''; sifre.focus();
+      });
+    });
+  }
+
+  window.Giris = {
+    /* Bulut kurulu ve giriş yapılmamışsa ekranı göster */
+    gerekli: function () {
+      if (!window.Bulut || !window.Bulut.varMi()) return false;
+      if (window.NOHUT_SALT_OKUNUR) return false;      // şifreli kopya
+      return !window.Bulut.girisliMi();
+    },
+    ekran: ekran,
+    cikis: function () {
+      window.Bulut.cikis();
+      try { localStorage.removeItem('nohut_bulut_bilinen_surum'); } catch (e) { }
+      location.reload();
+    }
+  };
+})();
+/* ============================================================
    cozum.js — Şifreli yayın kopyasını çözer
 
    Yayınlanan sayfa herkese açık bir adreste durur; bu yüzden veri
@@ -945,6 +1236,10 @@ window.NOHUT_TUZ = 'nohut-ithalat-takip-v1';
     gerekli: function () {
       if (!window.NOHUT_SIFRE_OZETI) return false;          // kilit kurulmamış
       if (!/^https?:/.test(location.protocol)) return false; // yerel dosya
+      // Kendi bilgisayarındaki uygulama şifre sormaz: kilit, yayınlanan
+      // kopya içindir. Bu makineye erişebilen zaten veri dosyasına da erişir.
+      if (/^(127\.0\.0\.1|localhost|\[::1\])$/.test(location.hostname)
+          && !(window.Cozum && window.Cozum.var())) return false;
       if (!(window.crypto && crypto.subtle)) return false;   // özet alınamıyor
       // Şifreli kopyada şifre AYNI ZAMANDA çözme anahtarıdır;
       // hatırlamakla olmaz, her açılışta sorulmalı.
@@ -2142,6 +2437,51 @@ window.NOHUT_TUZ = 'nohut-ithalat-takip-v1';
     }
   };
 
+  /* Bulut motoru — asıl kayıt Supabase'de.
+     Her cihazdan aynı veriye girilir; tek kaynak olduğu için
+     çakışma da olmaz. Mac'ten kullanıldığında ayrıca yerel dosyaya
+     yedeklenir: bulut erişilemezse veri yine elinde kalır. */
+  var BulutMotoru = {
+    ad: 'bulut',
+    calisir: function () { return true; },
+    oku: function () {
+      return window.Bulut.oku().then(function (d) {
+        var v = gecir(d ? d.veri : {});
+        yerelYedekle(v);
+        return v;
+      });
+    },
+    yaz: function (veri) {
+      return window.Bulut.yaz(veri, cihazAdi()).then(function (r) {
+        yerelYedekle(veri);
+        return r;
+      });
+    }
+  };
+
+  function cihazAdi() {
+    var u = navigator.userAgent;
+    if (/iPhone/.test(u)) return 'iPhone';
+    if (/iPad/.test(u)) return 'iPad';
+    if (/Android/.test(u)) return 'Android';
+    if (/Mac/.test(u)) return 'Mac';
+    if (/Windows/.test(u)) return 'Windows';
+    return 'bilinmiyor';
+  }
+
+  /* Mac'te çalışıyorsak buluttan gelen veriyi dosyaya da yaz.
+     Bulut bir gün erişilemezse kayıtlar yine elde kalsın diye. */
+  function yerelYedekle(veri) {
+    var yerelSunucu = /^https?:$/.test(location.protocol) &&
+      /^(127\.0\.0\.1|localhost|\[::1\])$/.test(location.hostname);
+    if (!yerelSunucu) return;
+    fetch('/api/veri', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(veri)
+    }).catch(function () { });
+  }
+
   // Şifreli yayın kopyası: veri sayfanın içinde, salt okunur
   var KopyaMotoru = {
     ad: 'kopya',
@@ -2154,13 +2494,21 @@ window.NOHUT_TUZ = 'nohut-ithalat-takip-v1';
     }
   };
 
-  Veri.motorlar = { yerel: YerelMotor, sunucu: SunucuMotoru, kopya: KopyaMotoru };
+  Veri.motorlar = { yerel: YerelMotor, sunucu: SunucuMotoru,
+                    kopya: KopyaMotoru, bulut: BulutMotoru };
 
   /* Hangi depo kullanılacak?
      - Yerel sunucudan (http://127.0.0.1) açıldıysa → diskteki dosya
      - Dosyadan (file://) ya da internetten açıldıysa → tarayıcı deposu */
   Veri.motorSec = function () {
     if (window.NOHUT_SALT_OKUNUR) { Veri.motor = KopyaMotoru; return Veri.motor; }
+
+    // Buluta giriş yapılmışsa asıl kaynak odur — her cihazda aynı veri
+    if (window.Bulut && window.Bulut.varMi() && window.Bulut.girisliMi()) {
+      Veri.motor = BulutMotoru;
+      return Veri.motor;
+    }
+
     var yerelSunucu = /^https?:$/.test(location.protocol) &&
       /^(127\.0\.0\.1|localhost|\[::1\])$/.test(location.hostname);
     Veri.motor = yerelSunucu ? SunucuMotoru : YerelMotor;
@@ -2411,6 +2759,12 @@ window.NOHUT_TUZ = 'nohut-ithalat-takip-v1';
     var t = 0;
     KOLEKSIYONLAR.forEach(function (k) { t += (db[k] || []).length; });
     return t;
+  };
+
+  /* Dışarıdan gelen veriyi belleğe al ve kaydet (göç, çakışma çözümü) */
+  Veri.disaridanYukle = function (v) {
+    db = gecir(v || {});
+    return Veri.motor.yaz(db).then(function () { duyur(); return db; });
   };
 
   Veri.hepsiniSil = function () {
@@ -2706,9 +3060,22 @@ window.NOHUT_TUZ = 'nohut-ithalat-takip-v1';
   /* ============================================================
      ÇİZ
      ============================================================ */
+  var yayinSorgulandi = false;
+  function yayinDurumunuOgren() {
+    if (yayinSorgulandi || V.motor.ad !== 'dosya') return;
+    yayinSorgulandi = true;
+    fetch('/api/yayin-kurulu', { cache: 'no-store' })
+      .then(function (y) { return y.json(); })
+      .then(function (d) {
+        window.__yayinKurulu = !!d.kurulu;
+        ciz();
+      }).catch(function () { window.__yayinKurulu = true; });   // bilinmiyorsa uyarma
+  }
+
   function ciz() {
     var s = simdiki();
     var veri = V.hepsi();
+    yayinDurumunuOgren();
     el('baslik').textContent = BASLIKLAR[s.ad] || 'Nohut Takip';
     el('geriDugme').style.display = yigin.length > 1 ? '' : 'none';
 
@@ -2791,6 +3158,11 @@ window.NOHUT_TUZ = 'nohut-ithalat-takip-v1';
     if (kasa.bakiye < 0) {
       u.push({ kotu: true, b: 'Kasa eksiye düşmüş',
         m: 'Kasa bakiyesi ' + Tk(kasa.bakiye) + '. Muhtemelen kaydedilmemiş bir döviz transferi var.' });
+    }
+    if (V.motor.ad === 'dosya' && !window.__yayinKurulu) {
+      u.push({ b: 'Web kopyası henüz kurulmadı',
+        m: 'Kayıtlarını telefondan da görmek istersen tek seferlik kurulum gerekiyor. ' +
+           '<b data-eylem="yayinKur" style="color:var(--vurgu);cursor:pointer">Şimdi kur →</b>' });
     }
     var giderEksik = H.tumPartiler(veri).filter(function (o) {
       return o.giderDurumu && o.giderDurumu.eksikler.length;
@@ -3334,6 +3706,9 @@ window.NOHUT_TUZ = 'nohut-ithalat-takip-v1';
     h += '<h2 class="bolum">Program</h2>' +
       '<div class="secim-izgara">' +
       raporDugme('ayarlar', '💾', 'Yedek ve ayarlar', 'Veriyi indir, geri yükle') +
+      '<button data-eylem="yayinKur"><span class="simge">🌐</span>' +
+      '<span class="ad">Web kopyası</span>' +
+      '<span class="aciklama">Telefondan görmek için kur</span></button>' +
       '</div>';
     return h + '</div>';
   }
@@ -3730,6 +4105,79 @@ window.NOHUT_TUZ = 'nohut-ithalat-takip-v1';
       '<button class="dugme" data-eylem="yedekYukle">⬆️ Yedekten yükle</button>' +
       '</div></div></div>';
 
+    if (window.Bulut && Bulut.varMi() && Bulut.girisliMi()) {
+      h += '<h2 class="bolum">Hesap</h2>';
+      h += '<div class="kart"><div class="kart-ic">' +
+        '<div class="satir-arasi" style="margin-bottom:10px">' +
+          '<div><b>' + kacir(Bulut.eposta()) + '</b>' +
+          '<div class="kucuk-yazi">Kayıtların internette saklanıyor · ' +
+            'her cihazdan aynı veri</div></div>' +
+          '<span class="rozet arti">bağlı</span>' +
+        '</div>' +
+        '<div class="dugmeler">' +
+          '<button class="dugme" data-eylem="sifreDegistir">🔑 Şifreyi değiştir</button>' +
+          '<button class="dugme" data-eylem="cikisYap">Çıkış yap</button>' +
+        '</div></div></div>';
+    }
+
+    h += '<h2 class="bolum">Web kopyası</h2>';
+    if (V.motor.ad !== 'dosya') {
+      h += '<div class="kart"><div class="kart-ic kucuk-yazi">' +
+        'Web kopyası, <b>Mac\'teki Nohut Takip uygulamasından</b> kurulur. ' +
+        'Şu an programı uygulama üzerinden açmadığın için buradan kurulamaz.</div></div>';
+    }
+    if (V.motor.ad === 'dosya') {
+      h += '<div class="kart"><div class="kart-ic" id="yayinDurum">' +
+        '<p class="kucuk-yazi" style="margin:0">Kontrol ediliyor…</p></div></div>';
+      h += '<div class="bosluk"></div><div id="yayinDugmeler"></div>';
+      // durum sunucudan okunur (dosya yerel, istek dışarı çıkmaz)
+      setTimeout(function () {
+        fetch('/api/yayin', { cache: 'no-store' }).then(function (y) { return y.json(); })
+          .then(function (d) {
+            var k = el('yayinDurum');
+            if (!k) return;
+            var t = d.tarih ? d.tarih.slice(8, 10) + '.' + d.tarih.slice(5, 7) + '.' +
+                    d.tarih.slice(0, 4) + ' ' + d.tarih.slice(11, 16) : '';
+            var renk = d.durum === 'tamam' ? 'var(--arti)'
+                     : d.durum === 'hata' ? 'var(--eksi)'
+                     : d.durum === 'bekliyor' ? 'var(--uyari)' : 'var(--metin2)';
+            var isaret = d.durum === 'tamam' ? '✓' : d.durum === 'hata' ? '✕'
+                       : d.durum === 'bekliyor' ? '⏳' : '—';
+            k.innerHTML =
+              '<div class="satir-arasi" style="margin-bottom:6px">' +
+                '<b style="color:' + renk + '">' + isaret + ' ' +
+                (d.durum === 'tamam' ? 'Yayında güncel'
+                 : d.durum === 'bekliyor' ? 'Yayın bekliyor'
+                 : d.durum === 'hata' ? 'Yayınlanamadı' : 'Henüz yayınlanmadı') + '</b>' +
+                (t ? '<span class="kucuk-yazi">' + t + '</span>' : '') +
+              '</div>' +
+              '<p class="kucuk-yazi" style="margin:0">' +
+                (d.mesaj ? kacir(d.mesaj) + '<br>' : '') +
+                'nohut.btksite.online · şifreli, salt okunur</p>';
+          }).catch(function () {
+            var k = el('yayinDurum');
+            if (k) k.innerHTML = '<p class="kucuk-yazi" style="margin:0">Durum okunamadı.</p>';
+          });
+
+        // kurulu mu — ona göre düğme göster
+        fetch('/api/yayin-kurulu', { cache: 'no-store' }).then(function (y) { return y.json(); })
+          .then(function (d) {
+            var k = el('yayinDugmeler');
+            if (!k) return;
+            k.innerHTML = d.kurulu
+              ? '<button class="dugme tam" data-eylem="yayinlaSimdi">🔄 Web kopyasını şimdi güncelle</button>' +
+                '<p class="kucuk-yazi" style="margin-top:8px">Kayıt girdikçe zaten kendiliğinden ' +
+                'güncelleniyor. Bu düğme beklemeden gönderir.</p>'
+              : '<button class="dugme ana tam" data-eylem="yayinKur">🌐 Web kopyasını kur</button>' +
+                '<p class="kucuk-yazi" style="margin-top:8px">Bir kez şifreni sorar, sonra kayıtların ' +
+                'nohut.btksite.online adresinde şifreli olarak kendiliğinden güncellenir.</p>';
+            Array.prototype.forEach.call(k.querySelectorAll('[data-eylem]'), function (b) {
+              b.onclick = function () { EYLEMLER[b.dataset.eylem](); };
+            });
+          }).catch(function () { });
+      }, 50);
+    }
+
     h += '<h2 class="bolum">Firma adı</h2>';
     h += '<div class="kart"><div class="kart-ic">' +
       '<p class="kucuk-yazi" style="margin:0 0 10px">PDF raporlarının üstünde görünür. ' +
@@ -3805,6 +4253,93 @@ window.NOHUT_TUZ = 'nohut-ithalat-takip-v1';
       A.onayla('Sevkiyatı sil', 'Bu sevkiyat kaydı silinecek. Yüklenen mal partilere geri döner.',
         'Sil', function () { V.sil('sevkiyatlar', id); A.bildir('Sevkiyat silindi'); Git.geri(); }, true);
     },
+    cikisYap: function () {
+      A.onayla('Çıkış yap',
+        'Bu cihazdan çıkış yapılacak. Kayıtların internette duruyor, ' +
+        'tekrar giriş yaptığında yerinde olacak.', 'Çıkış yap', function () {
+          window.Giris.cikis();
+        });
+    },
+
+    sifreDegistir: function () {
+      var p = A.panelAc('Şifreyi değiştir',
+        '<p class="kucuk-yazi" style="margin:0 0 14px">Yeni şifre en az 8 karakter olmalı. ' +
+        'Bütün cihazlarda bu şifreyle gireceksin.</p>' +
+        '<div class="alan"><label for="ySif1">Yeni şifre</label>' +
+        '<input type="password" id="ySif1" autocomplete="new-password" ' +
+        'style="width:100%;padding:12px 13px;border:1px solid var(--cizgi);border-radius:11px;' +
+        'background:var(--kart2);color:var(--metin);font-size:16px;min-height:46px"></div>' +
+        '<div class="alan"><label for="ySif2">Tekrar</label>' +
+        '<input type="password" id="ySif2" autocomplete="new-password" ' +
+        'style="width:100%;padding:12px 13px;border:1px solid var(--cizgi);border-radius:11px;' +
+        'background:var(--kart2);color:var(--metin);font-size:16px;min-height:46px">' +
+        '<div class="ipucu" id="ySifIp"></div></div>',
+        '<button class="dugme" type="button" data-iptal>Vazgeç</button>' +
+        '<button class="dugme ana" type="button" data-tamam>Değiştir</button>');
+      A.$('#ySif1', p).focus();
+      A.$('[data-iptal]', p).onclick = A.panelKapat;
+      A.$('[data-tamam]', p).onclick = function () {
+        var a1 = A.$('#ySif1', p).value, a2 = A.$('#ySif2', p).value;
+        var ip = el('ySifIp');
+        if (a1.length < 8) { ip.className = 'ipucu hata'; ip.textContent = 'En az 8 karakter olmalı.'; return; }
+        if (a1 !== a2) { ip.className = 'ipucu hata'; ip.textContent = 'Şifreler aynı değil.'; return; }
+        ip.className = 'ipucu'; ip.textContent = 'Değiştiriliyor…';
+        Bulut.sifreDegistir(a1).then(function () {
+          A.panelKapat(); A.bildir('Şifre değiştirildi');
+        }).catch(function (e) {
+          ip.className = 'ipucu hata'; ip.textContent = e.message || 'Değiştirilemedi';
+        });
+      };
+    },
+
+    yayinKur: function () {
+      var p = A.panelAc('Web kopyasını kur',
+        '<p class="kucuk-yazi" style="margin:0 0 14px">Kayıtların <b>nohut.btksite.online</b> ' +
+        'adresinde şifreli olarak yayınlanacak. Aynı şifreyle açılacak — ' +
+        'şifreyi bilmeyen veriyi okuyamaz.</p>' +
+        '<div class="alan"><label for="ySifre">Program şifren</label>' +
+        '<input type="password" id="ySifre" autocomplete="current-password" ' +
+        'style="width:100%;padding:12px 13px;border:1px solid var(--cizgi);border-radius:11px;' +
+        'background:var(--kart2);color:var(--metin);font-size:16px;min-height:46px">' +
+        '<div class="ipucu" id="ySifreIp">Kilidi açarken kullandığın şifrenin aynısı.</div></div>',
+        '<button class="dugme" type="button" data-iptal>Vazgeç</button>' +
+        '<button class="dugme ana" type="button" data-tamam>Kur</button>');
+      var giris = A.$('#ySifre', p); giris.focus();
+      A.$('[data-iptal]', p).onclick = A.panelKapat;
+      function gonder() {
+        var ip = el('ySifreIp');
+        ip.className = 'ipucu'; ip.textContent = 'Kuruluyor…';
+        fetch('/api/anahtar', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sifre: giris.value })
+        }).then(function (y) { return y.json(); }).then(function (d) {
+          if (d.tamam) {
+            A.panelKapat();
+            A.bildir('Kuruldu — kayıtlar yayınlanıyor');
+            setTimeout(function () { Git.ciz(); }, 4000);
+          } else {
+            ip.className = 'ipucu hata'; ip.textContent = d.mesaj || 'Olmadı';
+            giris.value = ''; giris.focus();
+          }
+        }).catch(function () {
+          ip.className = 'ipucu hata'; ip.textContent = 'Bağlanılamadı.';
+        });
+      }
+      A.$('[data-tamam]', p).onclick = gonder;
+      giris.onkeydown = function (e) { if (e.key === 'Enter') gonder(); };
+    },
+
+    yayinlaSimdi: function () {
+      A.bildir('Gönderiliyor…');
+      fetch('/api/yayinla', { method: 'POST' })
+        .then(function (y) { return y.json(); })
+        .then(function (d) {
+          A.bildir(d.tamam ? 'Yayınlanıyor — birkaç saniye sürer' : (d.mesaj || 'Olmadı'));
+          setTimeout(function () { Git.ciz(); }, 6000);
+        })
+        .catch(function () { A.bildir('Bağlanılamadı'); });
+    },
+
     firmaKaydet: function () {
       var veri = V.hepsi();
       if (!veri.ayarlar) veri.ayarlar = {};
@@ -6319,7 +6854,16 @@ window.NOHUT_TUZ = 'nohut-ithalat-takip-v1';
     window.Veri.baslat().then(function () {
       window.Git.ciz();
     }).catch(function (e) {
-      hataGoster('Veriler açılamadı', String(e && e.message || e));
+      var m = String(e && e.message || e);
+      if (window.Veri.motor.ad === 'bulut') {
+        hataGoster('Kayıtlara ulaşılamadı',
+          /fetch|network|Failed/i.test(m)
+            ? 'İnternet bağlantısı yok. Kayıtların internette saklanıyor, ' +
+              'bağlantı gelince açılacak.<br><br>Sayfayı yenilemeyi dene.'
+            : m);
+      } else {
+        hataGoster('Veriler açılamadı', m);
+      }
     });
 
     // Yazma hatası olursa kullanıcıyı uyar (ör. depo doldu)
@@ -6331,11 +6875,19 @@ window.NOHUT_TUZ = 'nohut-ithalat-takip-v1';
   }
 
   document.addEventListener('DOMContentLoaded', function () {
-    if (window.Kilit && window.Kilit.gerekli()) {
-      window.Kilit.sor(programiBaslat);
-    } else {
-      programiBaslat();
+    // Sıra: şifreli kopya kilidi → buluta giriş → program
+    function devam() {
+      if (window.Giris && window.Giris.gerekli()) {
+        window.Giris.ekran(function () {
+          if (window.Veri.motorSec) window.Veri.motorSec();
+          programiBaslat();
+        });
+      } else {
+        programiBaslat();
+      }
     }
+    if (window.Kilit && window.Kilit.gerekli()) window.Kilit.sor(devam);
+    else devam();
   });
 })();
 </script>
