@@ -9,6 +9,9 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Nohut">
 <title>Nohut İthalat Takip</title>
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/simge-192.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/simge-192.png">
 <style>
 /* Nohut İthalat Takip — telefon öncelikli arayüz */
 
@@ -7378,6 +7381,16 @@ window.NOHUT_BULUT = {
     else devam();
   });
 })();
+<script>
+/* Servis çalışanı: uygulama telefonda saklansın, çevrimdışı da açılsın.
+   Yalnızca internetten (http/https) açıldığında kurulur. */
+if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)
+    && !/^(127\.0\.0\.1|localhost)$/.test(location.hostname)) {
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('/sw.js').catch(function () { });
+  });
+}
+</script>
 </script>
 </body>
 </html>
