@@ -774,6 +774,31 @@ body.basiliyor #basim { display: block; visibility: visible; }
 .dagilim-satir .d-kalite { flex: 1; color: var(--metin2); min-width: 0;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dagilim-satir .d-kg { font-weight: 620; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+/* ---------- salt okunur yayın kopyası ---------- */
+.kopya-serit {
+  position: fixed; left: 50%; transform: translateX(-50%);
+  top: calc(6px + env(safe-area-inset-top)); z-index: 250;
+  display: flex; align-items: center; gap: 8px;
+  background: var(--uyari-ac); color: var(--uyari);
+  border: 1px solid color-mix(in srgb, var(--uyari) 40%, transparent);
+  padding: 5px 13px; border-radius: 100px;
+  font-size: 12px; font-weight: 600; box-shadow: var(--golge);
+  pointer-events: none; max-width: 92vw;
+}
+.kopya-serit b { color: var(--metin2); font-weight: 500; }
+
+/* Salt okunur kopyada kayıt açan her şey gizlenir */
+body.salt-okunur .gezinme .orta,
+body.salt-okunur [data-form],
+body.salt-okunur [data-eylem="partiSil"],
+body.salt-okunur [data-eylem="sevkiyatSil"],
+body.salt-okunur [data-eylem="hepsiniSil"],
+body.salt-okunur [data-eylem="yedekYukle"],
+body.salt-okunur [data-eylem="firmaKaydet"],
+body.salt-okunur [data-eylem="zorunluDegistir"] { display: none !important; }
+body.salt-okunur .liste li[data-form] { display: none !important; }
+body.salt-okunur .tepe { padding-top: max(30px, env(safe-area-inset-top)); }
 </style>
 </head>
 <body>
@@ -805,6 +830,83 @@ body.basiliyor #basim { display: block; visibility: visible; }
    ============================================================ */
 window.NOHUT_SIFRE_OZETI = 'cb8767df6e31c9f1d0ec6b3380419fe035519c821a4589b264eac6f764113ae5';
 window.NOHUT_TUZ = 'nohut-ithalat-takip-v1';
+/* ============================================================
+   cozum.js — Şifreli yayın kopyasını çözer
+
+   Yayınlanan sayfa herkese açık bir adreste durur; bu yüzden veri
+   gizlenmez, ŞİFRELENİR. Şifreyi bilmeyen kaynak koda baksa bile
+   anlamsız bir yığın görür.
+
+   Çözüm tamamen tarayıcıda, WebCrypto ile yapılır — hiçbir yere
+   istek gitmez. Kopya SALT OKUNURDUR: kayıt girişi Mac'te kalır.
+   ============================================================ */
+(function () {
+  'use strict';
+
+  function b64(m) {
+    var ham = atob(m), d = new Uint8Array(ham.length);
+    for (var i = 0; i < ham.length; i++) d[i] = ham.charCodeAt(i);
+    return d;
+  }
+
+  function esit(a, b) {
+    if (a.length !== b.length) return false;
+    var f = 0;
+    for (var i = 0; i < a.length; i++) f |= a[i] ^ b[i];
+    return f === 0;   // sabit süreli karşılaştırma
+  }
+
+  /* Şifreden anahtarları türet: ilk 32 bayt AES, son 32 bayt HMAC */
+  function anahtarlar(sifre, tuz, tur) {
+    return crypto.subtle.importKey('raw', new TextEncoder().encode(sifre),
+        { name: 'PBKDF2' }, false, ['deriveBits'])
+      .then(function (k) {
+        return crypto.subtle.deriveBits(
+          { name: 'PBKDF2', salt: tuz, iterations: tur, hash: 'SHA-256' }, k, 512);
+      })
+      .then(function (bit) {
+        var b = new Uint8Array(bit);
+        return Promise.all([
+          crypto.subtle.importKey('raw', b.slice(0, 32), { name: 'AES-CBC' }, false, ['decrypt']),
+          crypto.subtle.importKey('raw', b.slice(32), { name: 'HMAC', hash: 'SHA-256' },
+                                  false, ['sign'])
+        ]);
+      });
+  }
+
+  function coz(paket, sifre) {
+    var tuz = b64(paket.tuz), iv = b64(paket.iv);
+    var ct = b64(paket.veri), mac = b64(paket.mac);
+    return anahtarlar(sifre, tuz, paket.tur).then(function (a) {
+      var aesK = a[0], macK = a[1];
+      var govde = new Uint8Array(iv.length + ct.length);
+      govde.set(iv, 0); govde.set(ct, iv.length);
+      // Önce bütünlük: kurcalanmış veriyi çözmeye kalkışma
+      return crypto.subtle.sign('HMAC', macK, govde).then(function (imza) {
+        if (!esit(new Uint8Array(imza), mac)) throw new Error('mac');
+        return crypto.subtle.decrypt({ name: 'AES-CBC', iv: iv }, aesK, ct);
+      });
+    }).then(function (duz) {
+      return JSON.parse(new TextDecoder().decode(duz));
+    });
+  }
+
+  window.Cozum = {
+    /* Sayfaya gömülü şifreli veri var mı */
+    var: function () { return !!window.NOHUT_SIFRELI_VERI; },
+
+    /* Şifreyi dene; başarılıysa veriyi salt okunur yükle */
+    ac: function (sifre) {
+      var paket = window.NOHUT_SIFRELI_VERI;
+      if (!paket) return Promise.reject(new Error('veri yok'));
+      return coz(paket, sifre).then(function (veri) {
+        window.NOHUT_SALT_OKUNUR = true;
+        window.NOHUT_KOPYA_TARIHI = paket.tarih || '';
+        return veri;
+      });
+    }
+  };
+})();
 /* ============================================================
    kilit.js — Basit erişim kilidi
 
@@ -844,6 +946,9 @@ window.NOHUT_TUZ = 'nohut-ithalat-takip-v1';
       if (!window.NOHUT_SIFRE_OZETI) return false;          // kilit kurulmamış
       if (!/^https?:/.test(location.protocol)) return false; // yerel dosya
       if (!(window.crypto && crypto.subtle)) return false;   // özet alınamıyor
+      // Şifreli kopyada şifre AYNI ZAMANDA çözme anahtarıdır;
+      // hatırlamakla olmaz, her açılışta sorulmalı.
+      if (window.Cozum && window.Cozum.var()) return true;
       return !acikMi();
     },
 
@@ -868,18 +973,30 @@ window.NOHUT_TUZ = 'nohut-ithalat-takip-v1';
         e.preventDefault();
         var hataAlani = perde.querySelector('#kilitHata');
         hataAlani.textContent = '';
-        ozetle(giris.value).then(function (o) {
-          if (o === window.NOHUT_SIFRE_OZETI) {
-            try { localStorage.setItem(ANAHTAR, String(Date.now())); } catch (err) { }
-            perde.remove();
-            basarili();
-          } else {
+        var sifre = giris.value;
+        ozetle(sifre).then(function (o) {
+          if (o !== window.NOHUT_SIFRE_OZETI) {
             hataAlani.textContent = 'Şifre yanlış.';
-            giris.value = '';
-            giris.focus();
+            giris.value = ''; giris.focus();
+            return null;
           }
-        }).catch(function () {
-          hataAlani.textContent = 'Kontrol edilemedi. Sayfayı yenile.';
+          // Sayfaya şifreli kopya gömülüyse aynı şifreyle çöz
+          if (window.Cozum && window.Cozum.var()) {
+            hataAlani.textContent = 'Açılıyor…';
+            return window.Cozum.ac(sifre).then(function (veri) {
+              window.NOHUT_COZULEN_VERI = veri;
+              return true;
+            });
+          }
+          return true;
+        }).then(function (tamam) {
+          if (!tamam) return;
+          try { localStorage.setItem(ANAHTAR, String(Date.now())); } catch (err) { }
+          perde.remove();
+          basarili();
+        }).catch(function (e) {
+          hataAlani.textContent = e && e.message === 'mac'
+            ? 'Veri bozulmuş görünüyor.' : 'Açılamadı. Sayfayı yenile.';
         });
       });
     },
@@ -2025,12 +2142,25 @@ window.NOHUT_TUZ = 'nohut-ithalat-takip-v1';
     }
   };
 
-  Veri.motorlar = { yerel: YerelMotor, sunucu: SunucuMotoru };
+  // Şifreli yayın kopyası: veri sayfanın içinde, salt okunur
+  var KopyaMotoru = {
+    ad: 'kopya',
+    calisir: function () { return true; },
+    oku: function () {
+      return Promise.resolve(gecir(window.NOHUT_COZULEN_VERI || {}));
+    },
+    yaz: function () {
+      return Promise.reject(new Error('Bu salt okunur bir kopya — kayıt yapılamaz'));
+    }
+  };
+
+  Veri.motorlar = { yerel: YerelMotor, sunucu: SunucuMotoru, kopya: KopyaMotoru };
 
   /* Hangi depo kullanılacak?
      - Yerel sunucudan (http://127.0.0.1) açıldıysa → diskteki dosya
      - Dosyadan (file://) ya da internetten açıldıysa → tarayıcı deposu */
   Veri.motorSec = function () {
+    if (window.NOHUT_SALT_OKUNUR) { Veri.motor = KopyaMotoru; return Veri.motor; }
     var yerelSunucu = /^https?:$/.test(location.protocol) &&
       /^(127\.0\.0\.1|localhost|\[::1\])$/.test(location.hostname);
     Veri.motor = yerelSunucu ? SunucuMotoru : YerelMotor;
@@ -2116,6 +2246,10 @@ window.NOHUT_TUZ = 'nohut-ithalat-takip-v1';
   }
 
   function kaydet() {
+    if (window.NOHUT_SALT_OKUNUR) {
+      if (window.bildir) window.bildir('Bu salt okunur bir kopya — kayıt yapılamaz');
+      return;
+    }
     // Arka arkaya değişikliklerde tek yazma yapmak için kısa gecikme
     clearTimeout(yazmaBekleyen);
     yazmaBekleyen = setTimeout(function () {
@@ -6147,7 +6281,21 @@ window.NOHUT_TUZ = 'nohut-ithalat-takip-v1';
       '<div><b>' + baslik + '</b>' + mesaj + '</div></div></div>';
   }
 
+  function saltOkunurSerit() {
+    if (!window.NOHUT_SALT_OKUNUR) return;
+    var d = document.createElement('div');
+    d.className = 'kopya-serit';
+    var t = window.NOHUT_KOPYA_TARIHI || '';
+    d.innerHTML = '<span>👁 Salt okunur kopya</span>' +
+      (t ? '<b>' + t.slice(8, 10) + '.' + t.slice(5, 7) + '.' + t.slice(0, 4) +
+           ' ' + t.slice(11, 16) + '</b>' : '');
+    document.body.appendChild(d);
+    document.body.classList.add('salt-okunur');
+  }
+
   function programiBaslat() {
+    if (window.Veri.motorSec) window.Veri.motorSec();
+    saltOkunurSerit();
     // Gezinme
     Array.prototype.forEach.call(document.querySelectorAll('.gezinme [data-sekme]'), function (b) {
       b.onclick = function () { window.Git.sekme(b.dataset.sekme); };
