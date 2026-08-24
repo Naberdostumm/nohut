@@ -971,8 +971,69 @@ window.NOHUT_BULUT = {
 
   /* ---------- veri ---------- */
 
+  /* ---------- üyelik ve yetki ---------- */
+
+  Bulut.sahip = null;      // hangi kullanıcının verisine bakıyoruz
+  Bulut.rol = 'tam';       // 'tam' | 'okuyucu'
+
+  function rpc(ad, govde) {
+    return jetonlu(function () {
+      return istek('/rest/v1/rpc/' + ad, { yontem: 'POST', govde: govde || {} });
+    }).then(function (y) {
+      return y.json().then(function (d) {
+        if (!y.ok) throw new Error((d && (d.message || d.hint)) || 'işlem başarısız');
+        return d;
+      });
+    });
+  }
+  Bulut.rpc = rpc;
+
+  /* Kimin verisine, hangi yetkiyle eriştiğimizi belirler.
+     Kendi verisi varsa o; yoksa paylaşılan ilk veri. */
+  Bulut.erisimBelirle = function () {
+    return rpc('nohut_erisim').then(function (liste) {
+      var kendi = kullaniciId();
+      var kayitlar = Array.isArray(liste) ? liste : [];
+      var paylasilan = kayitlar.filter(function (x) { return x.sahip !== kendi; });
+
+      // Kendi satırı var mı diye bak
+      return jetonlu(function () {
+        return istek('/rest/v1/' + A.tablo + '?kullanici=eq.' + kendi + '&select=surum');
+      }).then(function (y) { return y.ok ? y.json() : []; }).then(function (kendiSatir) {
+        if (kendiSatir.length || !paylasilan.length) {
+          Bulut.sahip = kendi; Bulut.rol = 'tam';
+        } else {
+          Bulut.sahip = paylasilan[0].sahip;
+          Bulut.rol = paylasilan[0].rol;
+          Bulut.sahipEposta = paylasilan[0].eposta;
+        }
+        return { sahip: Bulut.sahip, rol: Bulut.rol, sahipEposta: Bulut.sahipEposta };
+      });
+    });
+  };
+
+  Bulut.uyeler = function () { return rpc('nohut_uyelerim'); };
+  Bulut.uyeEkle = function (eposta, rol) {
+    return rpc('nohut_uye_ekle', { p_eposta: eposta, p_rol: rol }).then(function (s) {
+      if (s === 'tamam') return true;
+      throw new Error({
+        'kullanici-yok': 'Bu e-postayla kayıtlı kullanıcı yok. Önce hesabı açılmalı.',
+        'kendini-ekleyemezsin': 'Kendini ekleyemezsin.',
+        'gecersiz-rol': 'Geçersiz yetki.'
+      }[s] || 'Eklenemedi');
+    });
+  };
+  Bulut.uyeSil = function (eposta) {
+    return rpc('nohut_uye_sil', { p_eposta: eposta }).then(function (s) {
+      if (s === 'tamam') return true;
+      throw new Error('Silinemedi');
+    });
+  };
+
+  /* ---------- veri ---------- */
+
   Bulut.oku = function () {
-    var kid = kullaniciId();
+    var kid = Bulut.sahip || kullaniciId();
     if (!kid) return Promise.reject(new Error('giriş yapılmamış'));
     return jetonlu(function () {
       return istek('/rest/v1/' + A.tablo + '?kullanici=eq.' + kid + '&select=veri,surum,guncelleme,cihaz');
@@ -990,8 +1051,11 @@ window.NOHUT_BULUT = {
   /* Buluta yaz. beklenenSurum verilirse ve sunucuda değişmişse
      yazma yapılmaz — çakışma bildirilir. */
   Bulut.yaz = function (veri, cihaz) {
-    var kid = kullaniciId();
+    var kid = Bulut.sahip || kullaniciId();
     if (!kid) return Promise.reject(new Error('giriş yapılmamış'));
+    if (Bulut.rol === 'okuyucu') {
+      return Promise.reject(new Error('Yalnızca okuma yetkin var'));
+    }
 
     var govde = { kullanici: kid, veri: veri, cihaz: cihaz || 'bilinmiyor' };
 
@@ -2615,13 +2679,14 @@ window.NOHUT_BULUT = {
      - Yerel sunucudan (http://127.0.0.1) açıldıysa → diskteki dosya
      - Dosyadan (file://) ya da internetten açıldıysa → tarayıcı deposu */
   Veri.motorSec = function () {
-    if (window.NOHUT_SALT_OKUNUR) { Veri.motor = KopyaMotoru; return Veri.motor; }
-
-    // Buluta giriş yapılmışsa asıl kaynak odur — her cihazda aynı veri
+    // Buluta giriş yapılmışsa asıl kaynak odur — okuyucu rolünde de
+    // veri buluttan gelir; yazma sunucu tarafında reddedilir.
     if (window.Bulut && window.Bulut.varMi() && window.Bulut.girisliMi()) {
       Veri.motor = BulutMotoru;
       return Veri.motor;
     }
+
+    if (window.NOHUT_SALT_OKUNUR) { Veri.motor = KopyaMotoru; return Veri.motor; }
 
     var yerelSunucu = /^https?:$/.test(location.protocol) &&
       /^(127\.0\.0\.1|localhost|\[::1\])$/.test(location.hostname);
@@ -4259,14 +4324,53 @@ window.NOHUT_BULUT = {
       '<button class="dugme" data-eylem="yedekYukle">⬆️ Yedekten yükle</button>' +
       '</div></div></div>';
 
+    if (window.Bulut && Bulut.varMi() && Bulut.girisliMi() && Bulut.rol === 'tam') {
+      h += '<h2 class="bolum">Kullanıcılar</h2>';
+      h += '<p class="kucuk-yazi" style="margin:0 0 10px">Kayıtlarını başkasıyla ' +
+        'paylaşabilirsin. Yetkiyi sen belirlersin ve istediğin zaman geri alırsın.</p>';
+      h += '<div class="kart"><div class="kart-ic" id="uyeListe">' +
+        '<p class="kucuk-yazi" style="margin:0">Yükleniyor…</p></div></div>';
+      h += '<div class="bosluk"></div>' +
+        '<button class="dugme tam" data-eylem="uyeEkle">➕ Kullanıcı ekle</button>';
+      setTimeout(function () {
+        Bulut.uyeler().then(function (liste) {
+          var k = el('uyeListe');
+          if (!k) return;
+          if (!liste || !liste.length) {
+            k.innerHTML = '<p class="kucuk-yazi" style="margin:0">Henüz kimseyle ' +
+              'paylaşmadın. Kayıtlarına yalnızca sen erişiyorsun.</p>';
+            return;
+          }
+          k.innerHTML = liste.map(function (u) {
+            return '<div class="satir-arasi" style="padding:8px 0;' +
+              'border-bottom:1px solid var(--cizgi2)">' +
+              '<div><b>' + kacir(u.eposta) + '</b>' +
+              '<div class="kucuk-yazi">' + (u.rol === 'tam'
+                ? 'Tam yetki — kayıt girebilir'
+                : 'Yalnızca okur — PDF alabilir, değiştiremez') + '</div></div>' +
+              '<button class="dugme kucuk tehlike" data-eylem="uyeSil" ' +
+              'data-param="' + kacir(u.eposta) + '">Kaldır</button></div>';
+          }).join('');
+          Array.prototype.forEach.call(k.querySelectorAll('[data-eylem]'), function (b) {
+            b.onclick = function () { EYLEMLER[b.dataset.eylem](b.dataset.param); };
+          });
+        }).catch(function () {
+          var k = el('uyeListe');
+          if (k) k.innerHTML = '<p class="kucuk-yazi" style="margin:0">Liste alınamadı.</p>';
+        });
+      }, 50);
+    }
+
     if (window.Bulut && Bulut.varMi() && Bulut.girisliMi()) {
       h += '<h2 class="bolum">Hesap</h2>';
       h += '<div class="kart"><div class="kart-ic">' +
         '<div class="satir-arasi" style="margin-bottom:10px">' +
           '<div><b>' + kacir(Bulut.eposta()) + '</b>' +
-          '<div class="kucuk-yazi">Kayıtların internette saklanıyor · ' +
-            'her cihazdan aynı veri</div></div>' +
-          '<span class="rozet arti">bağlı</span>' +
+          '<div class="kucuk-yazi">' + (Bulut.rol === 'okuyucu'
+            ? 'Yalnızca okuma yetkin var · veri sahibi: ' + kacir(Bulut.sahipEposta || '')
+            : 'Kayıtların internette saklanıyor · her cihazdan aynı veri') + '</div></div>' +
+          '<span class="rozet ' + (Bulut.rol === 'okuyucu' ? 'uyari' : 'arti') + '">' +
+            (Bulut.rol === 'okuyucu' ? 'okuyucu' : 'tam yetki') + '</span>' +
         '</div>' +
         '<div class="dugmeler">' +
           '<button class="dugme" data-eylem="sifreDegistir">🔑 Şifreyi değiştir</button>' +
@@ -4422,6 +4526,57 @@ window.NOHUT_BULUT = {
       A.onayla('Sevkiyatı sil', 'Bu sevkiyat kaydı silinecek. Yüklenen mal partilere geri döner.',
         'Sil', function () { V.sil('sevkiyatlar', id); A.bildir('Sevkiyat silindi'); Git.geri(); }, true);
     },
+    uyeEkle: function () {
+      var p = A.panelAc('Kullanıcı ekle',
+        '<p class="kucuk-yazi" style="margin:0 0 14px">Eklemek istediğin kişinin ' +
+        '<b>önce hesabı açılmış olmalı</b>. Hesabı yoksa bana söyle, açayım.</p>' +
+        '<div class="alan"><label for="uEposta">E-posta</label>' +
+        '<input type="email" id="uEposta" autocomplete="off" inputmode="email" ' +
+        'style="width:100%;padding:12px 13px;border:1px solid var(--cizgi);border-radius:11px;' +
+        'background:var(--kart2);color:var(--metin);font-size:16px;min-height:46px"></div>' +
+        '<div class="alan"><label>Yetkisi</label>' +
+        '<div class="secim-satir" style="flex-direction:column;gap:8px">' +
+          '<label style="min-width:0;justify-content:flex-start;text-align:left;padding:13px 14px">' +
+            '<input type="radio" name="uRol" value="okuyucu" checked>' +
+            '<span style="flex:1"><b>Yalnızca okur</b><br>' +
+            '<span style="font-weight:400;font-size:12.5px;color:var(--metin2)">' +
+            'Bütün kayıtları ve raporları görür, PDF alır. Hiçbir şeyi değiştiremez.' +
+            '</span></span></label>' +
+          '<label style="min-width:0;justify-content:flex-start;text-align:left;padding:13px 14px">' +
+            '<input type="radio" name="uRol" value="tam">' +
+            '<span style="flex:1"><b>Tam yetki</b><br>' +
+            '<span style="font-weight:400;font-size:12.5px;color:var(--metin2)">' +
+            'Senin yapabildiğin her şeyi yapar: kayıt girer, siler, düzenler.' +
+            '</span></span></label>' +
+        '</div><div class="ipucu" id="uIpucu"></div></div>',
+        '<button class="dugme" type="button" data-iptal>Vazgeç</button>' +
+        '<button class="dugme ana" type="button" data-tamam>Ekle</button>');
+      A.$('#uEposta', p).focus();
+      A.$('[data-iptal]', p).onclick = A.panelKapat;
+      A.$('[data-tamam]', p).onclick = function () {
+        var e = A.$('#uEposta', p).value.trim();
+        var r = (A.$('input[name=uRol]:checked', p) || {}).value || 'okuyucu';
+        var ip = el('uIpucu');
+        if (!e) { ip.className = 'ipucu hata'; ip.textContent = 'E-posta gir.'; return; }
+        ip.className = 'ipucu'; ip.textContent = 'Ekleniyor…';
+        Bulut.uyeEkle(e, r).then(function () {
+          A.panelKapat(); A.bildir('Kullanıcı eklendi'); Git.ciz();
+        }).catch(function (err) {
+          ip.className = 'ipucu hata'; ip.textContent = err.message;
+        });
+      };
+    },
+
+    uyeSil: function (eposta) {
+      A.onayla('Kullanıcıyı kaldır',
+        '<b>' + kacir(eposta) + '</b> artık kayıtlarına erişemeyecek. ' +
+        'İstediğin zaman geri ekleyebilirsin.', 'Kaldır', function () {
+          Bulut.uyeSil(eposta).then(function () {
+            A.bildir('Kaldırıldı'); Git.ciz();
+          }).catch(function (e) { A.bildir(e.message); });
+        }, true);
+    },
+
     cikisYap: function () {
       A.onayla('Çıkış yap',
         'Bu cihazdan çıkış yapılacak. Kayıtların internette duruyor, ' +
@@ -7132,13 +7287,19 @@ window.NOHUT_BULUT = {
   }
 
   function saltOkunurSerit() {
+    // Okuyucu rolünde veri yine buluttan gelir; yazma reddedilir.
     if (!window.NOHUT_SALT_OKUNUR) return;
     var d = document.createElement('div');
     d.className = 'kopya-serit';
     var t = window.NOHUT_KOPYA_TARIHI || '';
-    d.innerHTML = '<span>👁 Salt okunur kopya</span>' +
-      (t ? '<b>' + t.slice(8, 10) + '.' + t.slice(5, 7) + '.' + t.slice(0, 4) +
-           ' ' + t.slice(11, 16) + '</b>' : '');
+    if (window.Bulut && window.Bulut.rol === 'okuyucu') {
+      d.innerHTML = '<span>👁 Yalnızca okuma yetkisi</span>' +
+        (window.Bulut.sahipEposta ? '<b>' + window.Bulut.sahipEposta + '</b>' : '');
+    } else {
+      d.innerHTML = '<span>👁 Salt okunur kopya</span>' +
+        (t ? '<b>' + t.slice(8, 10) + '.' + t.slice(5, 7) + '.' + t.slice(0, 4) +
+             ' ' + t.slice(11, 16) + '</b>' : '');
+    }
     document.body.appendChild(d);
     document.body.classList.add('salt-okunur');
   }
@@ -7192,13 +7353,25 @@ window.NOHUT_BULUT = {
   document.addEventListener('DOMContentLoaded', function () {
     // Sıra: şifreli kopya kilidi → buluta giriş → program
     function devam() {
-      if (window.Giris && window.Giris.gerekli()) {
-        window.Giris.ekran(function () {
+      function bulutHazirla() {
+        if (!(window.Bulut && window.Bulut.varMi() && window.Bulut.girisliMi())) {
+          if (window.Veri.motorSec) window.Veri.motorSec();
+          programiBaslat();
+          return;
+        }
+        window.Bulut.erisimBelirle().then(function (e) {
+          if (e.rol === 'okuyucu') window.NOHUT_SALT_OKUNUR = true;
+          if (window.Veri.motorSec) window.Veri.motorSec();
+          programiBaslat();
+        }).catch(function () {
           if (window.Veri.motorSec) window.Veri.motorSec();
           programiBaslat();
         });
+      }
+      if (window.Giris && window.Giris.gerekli()) {
+        window.Giris.ekran(bulutHazirla);
       } else {
-        programiBaslat();
+        bulutHazirla();
       }
     }
     if (window.Kilit && window.Kilit.gerekli()) window.Kilit.sor(devam);
