@@ -1444,6 +1444,9 @@ window.NOHUT_BULUT = {
     dizi(veri.genelGiderler).forEach(function (g) {
       olaylar.push({ tur: 'genelGider', tarih: g.tarih, kayit: g });
     });
+    dizi(veri.odemeler).forEach(function (o) {
+      olaylar.push({ tur: 'odeme', tarih: o.tarih, kayit: o });
+    });
 
     olaylar = tariheGore(olaylar);
 
@@ -1538,6 +1541,17 @@ window.NOHUT_BULUT = {
           tarih: k.tarih, tur: 'Eleme ücreti',
           aciklama: 'Eleme — ' + (k.partiKod || ''),
           giren: 0, cikan: et, usd: -re.usd, kur: re.kur
+        };
+
+      } else if (o.tur === 'odeme') {
+        // Tüccara sonradan yapılan ödeme: kasadan ÖDEME TARİHİNDE çıkar
+        var ot = S(k.tutar);
+        var ro = cikis(ot);
+        usdDegeri['odeme:' + k.id] = ro.usd;
+        satir = {
+          tarih: k.tarih, tur: 'Tüccara ödeme',
+          aciklama: (k.satici || 'tüccar') + (k.aciklama ? ' — ' + k.aciklama : ''),
+          giren: 0, cikan: ot, usd: -ro.usd, kur: ro.kur
         };
 
       } else if (o.tur === 'genelGider') {
@@ -1816,6 +1830,10 @@ window.NOHUT_BULUT = {
       yuklenenKg: yuklenenKg,
       tamam: ustKg > 0,
       altKaliteler: Hesap.altKaliteler(veri, partiId),
+      guncelBorc: (function () {
+        var d = Hesap.borcDagilimi(veri);
+        return d.partiBorc[partiId] || 0;
+      })(),
       giderDurumu: Hesap.giderDurumu(veri, partiId, kasa)
     };
   };
@@ -1825,6 +1843,83 @@ window.NOHUT_BULUT = {
     return Hesap.partiListesi(veri).map(function (p) {
       return Hesap.parti(veri, p.id, kasa);
     }).filter(Boolean);
+  };
+
+  /* ------------------------------------------------------------
+     BORÇ VE ÖDEMELER
+
+     Alım satırında "Borç" ya da "Kısmi" işaretlenen tutar borçtur.
+     Sonradan yapılan ödemeler o tüccarın EN ESKİ borcundan başlayarak
+     düşülür. Böylece hem tüccar bazında kalan borç, hem parti bazında
+     güncel borç doğru çıkar.
+     ------------------------------------------------------------ */
+
+  Hesap.borcDagilimi = function (veri) {
+    var partiler = Hesap.partiListesi(veri).slice().sort(function (a, b) {
+      return String(a.tarih || '').localeCompare(String(b.tarih || ''));
+    });
+
+    // tüccar -> borçlu satırlar (eskiden yeniye)
+    var tuccar = {};
+    partiler.forEach(function (p) {
+      p.alimlar.forEach(function (a, i) {
+        var borc = Hesap.satirBorc(a);
+        if (borc <= 0) return;
+        var ad = (a.satici || '').trim() || 'Belirtilmemiş';
+        if (!tuccar[ad]) tuccar[ad] = { ad: ad, satirlar: [], alimBorcu: 0, odeme: 0 };
+        tuccar[ad].satirlar.push({
+          partiId: p.id, kod: p.kod, tarih: p.tarih, sira: i,
+          borc: borc, odenen: 0
+        });
+        tuccar[ad].alimBorcu += borc;
+      });
+    });
+
+    // ödemeleri dağıt
+    dizi(veri.odemeler).slice().sort(function (a, b) {
+      return String(a.tarih || '').localeCompare(String(b.tarih || ''));
+    }).forEach(function (o) {
+      var ad = (o.satici || '').trim() || 'Belirtilmemiş';
+      var t = tuccar[ad];
+      if (!t) { tuccar[ad] = { ad: ad, satirlar: [], alimBorcu: 0, odeme: S(o.tutar) }; return; }
+      t.odeme += S(o.tutar);
+      var kalan = S(o.tutar);
+      t.satirlar.forEach(function (x) {
+        if (kalan <= 0.0001) return;
+        var al = Math.min(kalan, x.borc - x.odenen);
+        if (al <= 0.0001) return;
+        x.odenen += al;
+        kalan -= al;
+      });
+    });
+
+    // parti bazında kalan borç
+    var partiBorc = {};
+    Object.keys(tuccar).forEach(function (ad) {
+      tuccar[ad].satirlar.forEach(function (x) {
+        partiBorc[x.partiId] = (partiBorc[x.partiId] || 0) + (x.borc - x.odenen);
+      });
+      var t = tuccar[ad];
+      t.kalanBorc = Math.max(0, t.alimBorcu - t.odeme);
+      t.fazlaOdeme = Math.max(0, t.odeme - t.alimBorcu);
+    });
+
+    // satır bazında kalan borç: "partiId:sira" -> kalan
+    var satirBorc = {};
+    Object.keys(tuccar).forEach(function (ad) {
+      tuccar[ad].satirlar.forEach(function (x) {
+        satirBorc[x.partiId + ':' + x.sira] = x.borc - x.odenen;
+      });
+    });
+
+    return { tuccar: tuccar, partiBorc: partiBorc, satirBorc: satirBorc };
+  };
+
+  Hesap.toplamBorc = function (veri) {
+    var d = Hesap.borcDagilimi(veri);
+    var t = 0;
+    Object.keys(d.tuccar).forEach(function (ad) { t += d.tuccar[ad].kalanBorc; });
+    return t;
   };
 
   /* ============================================================
@@ -1849,20 +1944,22 @@ window.NOHUT_BULUT = {
         t.partiler[p.id] = true;
       });
     });
+    var dagilim = Hesap.borcDagilimi(veri);
     return Object.keys(harita).map(function (ad) {
       var t = harita[ad];
       t.ortFiyat = t.kg > 0 ? t.tutar / t.kg : 0;
       t.partiSayisi = Object.keys(t.partiler).length;
       delete t.partiler;
+      var d = dagilim.tuccar[ad];
+      t.alimBorcu = d ? d.alimBorcu : t.borc;
+      t.odeme = d ? d.odeme : 0;
+      t.borc = d ? d.kalanBorc : t.borc;      // ödemeler düşülmüş kalan borç
+      t.fazlaOdeme = d ? d.fazlaOdeme : 0;
       return t;
     }).sort(function (a, b) { return b.kg - a.kg; });
   };
 
-  Hesap.toplamBorc = function (veri) {
-    var b = 0;
-    Hesap.partiListesi(veri).forEach(function (p) { b += p.borc; });
-    return b;
-  };
+
 
   /* ============================================================
      GİDER KALEMLERİ
@@ -2371,13 +2468,14 @@ window.NOHUT_BULUT = {
       altSatislar: [],
       hamSatislar: [],
       genelGiderler: [],
+      odemeler: [],
       sevkiyatlar: []
     };
   }
   Veri.bos = bos;
 
   var KOLEKSIYONLAR = ['transferler', 'partiler', 'masraflar', 'elemeler',
-                       'altSatislar', 'hamSatislar', 'genelGiderler', 'sevkiyatlar'];
+                       'altSatislar', 'hamSatislar', 'genelGiderler', 'odemeler', 'sevkiyatlar'];
 
   /* ============================================================
      MOTORLAR — depolama arkasında duran değiştirilebilir katman
@@ -3348,10 +3446,10 @@ window.NOHUT_BULUT = {
         '<div class="kucuk-yazi" style="margin-top:3px">' +
           (p.satici ? kacir(p.satici) : 'satıcı belirtilmemiş') +
           (p.bolge ? ' · ' + kacir(p.bolge) : '') + ' · ' + tarihGoster(p.tarih) + '</div></div>' +
-        '<span class="rozet ' + (p.odemeDurumu === 'Ödendi' ? 'arti' :
-          p.odemeDurumu === 'Borç' ? 'eksi' : 'uyari') + '">' +
-          kacir(p.odemeDurumu || 'Ödendi') +
-          (p.borc > 0 ? ' · ' + Tk(p.borc) : '') + '</span>' +
+        '<span class="rozet ' + (o.guncelBorc > 0.5 ? 'eksi' : 'arti') + '">' +
+          (o.guncelBorc > 0.5 ? 'Borç · ' + Tk(o.guncelBorc)
+                              : (p.borc > 0 ? 'Ödendi' : kacir(p.odemeDurumu || 'Ödendi'))) +
+          '</span>' +
       '</div></div></div>';
 
     /* eksik zorunlu gider uyarısı — maliyet olduğundan düşük görünür */
@@ -3416,25 +3514,28 @@ window.NOHUT_BULUT = {
     /* alım satırları — hangi tüccardan ne alındı */
     h += '<h2 class="bolum">Alımlar' +
       (p.saticiSayisi > 1 ? ' · ' + p.saticiSayisi + ' tüccar' : '') + '</h2>';
+    var dag = H.borcDagilimi(veri);
     h += '<div class="kart tablo-sar"><table class="alim-tablo"><thead><tr>' +
       '<th>Tüccar</th><th>kg</th><th>T/kg</th><th>Tutar</th><th>Ödeme</th>' +
       '</tr></thead><tbody>' +
-      p.alimlar.map(function (a) {
-        var borc = H.satirBorc(a);
+      p.alimlar.map(function (a, i) {
+        // ödemeler düşülmüş güncel borç
+        var borc = dag.satirBorc[p.id + ':' + i];
+        if (borc === undefined) borc = H.satirBorc(a);
         return '<tr>' +
           '<td><b>' + kacir(a.satici || '—') + '</b></td>' +
           '<td>' + n0(a.kg) + '</td>' +
           '<td>' + n0(a.birimFiyat) + '</td>' +
           '<td>' + n0(a.tutar) + '</td>' +
-          '<td class="' + (borc > 0 ? 'borc' : '') + '">' +
-            (borc > 0 ? kacir(a.odemeDurumu) + ' · ' + Tk(borc) : 'Ödendi') + '</td>' +
+          '<td class="' + (borc > 0.5 ? 'borc' : '') + '">' +
+            (borc > 0.5 ? 'Borç · ' + Tk(borc) : 'Ödendi') + '</td>' +
         '</tr>';
       }).join('') +
       (p.saticiSayisi > 1 ? '<tr style="font-weight:650;border-top:2px solid var(--cizgi)">' +
         '<td>Toplam</td><td>' + n0(p.hamKg) + '</td><td>' + n0(p.birimFiyat) + '</td>' +
         '<td>' + n0(p.tutar) + '</td>' +
-        '<td class="' + (p.borc > 0 ? 'borc' : '') + '">' +
-          (p.borc > 0 ? Tk(p.borc) : '—') + '</td></tr>' : '') +
+        '<td class="' + (o.guncelBorc > 0.5 ? 'borc' : '') + '">' +
+          (o.guncelBorc > 0.5 ? Tk(o.guncelBorc) : '—') + '</td></tr>' : '') +
       '</tbody></table></div>';
     if (p.saticiSayisi > 1) {
       h += '<p class="kucuk-yazi" style="margin-top:8px">T/kg sütunundaki toplam satırı ' +
@@ -3626,6 +3727,12 @@ window.NOHUT_BULUT = {
           '<span class="aciklama">' + kgTam(o.ustStokKg) + ' yüklenebilir</span></button>'
         : '') +
 
+      (o.guncelBorc > 0.5
+        ? '<button class="islem-karo genis" data-form="odeme" ' +
+          'data-param="' + kacir((p.alimlar[0] || {}).satici || '') + '">' +
+          '<span class="simge">💳</span><span class="ad">Borç öde — ' + Tk(o.guncelBorc) + '</span></button>'
+        : '') +
+
       '<button class="islem-karo genis" data-form="parti" data-param="' + p.id + '">' +
         '<span class="simge">✏️</span><span class="ad">Partiyi ve alımları düzenle</span></button>' +
       '<button class="islem-karo genis" data-eylem="partiSil" data-param="' + p.id + '" ' +
@@ -3777,12 +3884,31 @@ window.NOHUT_BULUT = {
         liste.filter(function (t) { return t.borc > 0; })
           .sort(function (a, b) { return b.borc - a.borc; })
           .map(function (t) {
-            return '<li style="cursor:default"><div class="sol">' +
+            return '<li data-form="odeme" data-param="' + kacir(t.ad) + '"><div class="sol">' +
               '<div class="ana">' + kacir(t.ad) + '</div>' +
-              '<div class="yan">' + KG(t.kg) + ' aldın · toplam ' + Tk(t.tutar) + '</div></div>' +
+              '<div class="yan">' + KG(t.kg) + ' aldın' +
+                (t.odeme > 0 ? ' · ' + Tk(t.odeme) + ' ödendi' : '') + '</div></div>' +
               '<div class="sag"><div class="ana negatif">' + Tk(t.borc) + '</div>' +
-              '<div class="yan">borç</div></div></li>';
+              '<div class="yan">kalan borç</div></div><span class="ok">›</span></li>';
           }).join('') + '</ul></div>';
+      h += '<div class="bosluk"></div>' +
+        '<button class="dugme ana tam" data-form="odeme">💳 Ödeme kaydet</button>';
+    }
+
+    /* ödeme geçmişi */
+    var odemeler = (veri.odemeler || []).slice().sort(function (a, b) {
+      return (b.tarih || '').localeCompare(a.tarih || '');
+    });
+    if (odemeler.length) {
+      h += '<h2 class="bolum">Yapılan ödemeler</h2>';
+      h += '<div class="kart"><ul class="liste">' + odemeler.map(function (o) {
+        return '<li data-form="odeme" data-param="' + o.id + '">' +
+          '<div class="sol"><div class="ana">' + kacir(o.satici) + '</div>' +
+          '<div class="yan">' + tarihGoster(o.tarih) +
+          (o.aciklama ? ' · ' + kacir(o.aciklama) : '') + '</div></div>' +
+          '<div class="sag"><div class="ana pozitif">' + Tk(o.tutar) + '</div>' +
+          '<div class="yan">ödendi</div></div><span class="ok">›</span></li>';
+      }).join('') + '</ul></div>';
     }
 
     h += '<h2 class="bolum">Alım fiyatına göre</h2>';
@@ -4427,6 +4553,7 @@ window.NOHUT_BULUT = {
       ['altSatis', '🪙', '8mm altı satışı', 'İran\'da geri sattığın küçük nohut'],
       ['hamSatis', '🌾', 'Ham satış', 'Elemeden geçmeden sattığın mal'],
       ['transfer', '💵', 'Döviz transferi', 'Dolar gönderip Tümen aldın'],
+      ['odeme', '💳', 'Tüccara ödeme', 'Borcunu kapatmak için ödediğin para'],
       ['genelGider', '✈️', 'Genel gider', 'Otel, uçak, yeme içme — mala binmez'],
       ['sevkiyat', '🚚', 'Sevkiyat', 'Kamyona yükleyip yola çıkardın']
     ];
@@ -5751,6 +5878,136 @@ window.NOHUT_BULUT = {
   }
 
   /* ============================================================
+     TÜCCARA ÖDEME — sonradan yapılan borç ödemesi
+
+     Ödeme tüccara yapılır, o tüccarın EN ESKİ borcundan başlayarak
+     düşülür. Kasadan ödeme tarihinde çıkar (alım tarihinde değil).
+     ============================================================ */
+  function formOdeme(id, onSecili) {
+    var k = id ? V.bul('odemeler', id) : null;
+    var veri = V.hepsi();
+    var kasa = H.kasa(veri);
+    var dagilim = H.borcDagilimi(veri);
+
+    var borclular = Object.keys(dagilim.tuccar)
+      .map(function (ad) { return dagilim.tuccar[ad]; })
+      .filter(function (t) { return t.kalanBorc > 0.5 || (k && k.satici === t.ad); })
+      .sort(function (a, b) { return b.kalanBorc - a.kalanBorc; });
+
+    if (!borclular.length && !k) {
+      return A.panelAc('Tüccara ödeme', '<div class="bos-durum"><div class="simge">💳</div>' +
+        '<p>Ödenmemiş borç görünmüyor.<br>' +
+        'Alım kaydında bir satırı <b>Borç</b> ya da <b>Kısmi</b> işaretlersen burada çıkar.</p></div>');
+    }
+
+    var secili = k ? k.satici : (onSecili || borclular[0].ad);
+
+    var govde =
+      '<div class="ikili">' +
+        alan({ id: 'f_tarih', etiket: 'Ödeme tarihi', tip: 'date', deger: k ? k.tarih : bugun() }) +
+        alan({ id: 'f_satici', etiket: 'Kime ödendi', tip: 'secim', deger: secili,
+               secenekler: borclular.map(function (t) {
+                 return { deger: t.ad, ad: t.ad + ' — ' + A.Tk(t.kalanBorc) + ' borç' };
+               }) }) +
+      '</div>' +
+      '<div class="alan">' +
+        '<label for="f_tutar">Ödenen tutar</label>' +
+        '<div class="onek">' +
+          '<input type="text" inputmode="decimal" data-sayi id="f_tutar" autocomplete="off" ' +
+            'value="' + (k ? k.tutar : '') + '" placeholder="0"><span class="birim">T</span>' +
+        '</div>' +
+        '<button type="button" class="tumu-dugme" id="tumuOde">' +
+          '<span class="tumu-sol">Borcun tamamını öde</span>' +
+          '<span class="tumu-kg" id="tumuBorc">—</span></button>' +
+        '<div class="ipucu" id="f_tutar_ipucu"></div>' +
+      '</div>' +
+      alan({ id: 'f_aciklama', etiket: 'Açıklama', deger: k ? k.aciklama : '',
+             yerTutucu: 'örn. nakit, havale' }) +
+      '<div id="odemeDagilim"></div>';
+
+    var p = A.panelAc(k ? 'Ödemeyi düzenle' : 'Tüccara ödeme', govde, ayak(!!k));
+
+    function seciliTuccar() {
+      var ad = deger('f_satici');
+      return dagilim.tuccar[ad] || null;
+    }
+    function kalanBorc() {
+      var t = seciliTuccar();
+      if (!t) return 0;
+      // düzenlemede kendi tutarını geri say
+      return t.kalanBorc + (k && k.satici === t.ad ? (Number(k.tutar) || 0) : 0);
+    }
+
+    el('tumuOde').onclick = function () {
+      var b = kalanBorc();
+      if (b <= 0.5) return hata('Bu tüccara borç görünmüyor');
+      el('f_tutar').value = n0(b);
+      el('f_tutar').dispatchEvent(new Event('input', { bubbles: true }));
+    };
+
+    bagla(p, !!k, 'odemeler', id, function () {
+      var tutar = sayi('f_tutar');
+      if (tutar <= 0) return hata('Ödenen tutarı gir');
+      var kayit = {
+        tarih: deger('f_tarih') || bugun(),
+        satici: deger('f_satici'),
+        tutar: tutar,
+        aciklama: deger('f_aciklama')
+      };
+      if (k) V.guncelle('odemeler', id, kayit); else V.ekle('odemeler', kayit);
+      tamamla(k ? 'Ödeme güncellendi' : 'Ödeme kaydedildi');
+    }, {
+      __hepsi: function () {
+        var t = seciliTuccar();
+        var borc = kalanBorc();
+        var tutar = sayi('f_tutar');
+
+        el('tumuBorc').textContent = borc > 0.5 ? A.T(borc) : 'yok';
+        el('tumuOde').disabled = borc <= 0.5;
+        el('tumuOde').classList.toggle('pasif', borc <= 0.5);
+        el('tumuOde').classList.toggle('secili', borc > 0.5 && Math.abs(tutar - borc) < 0.5);
+
+        var ip = el('f_tutar_ipucu');
+        if (tutar > borc + 0.5) {
+          ip.className = 'ipucu hata';
+          ip.innerHTML = '⚠️ Borçtan fazla: bu tüccara ' + A.T(borc) + ' borcun var.';
+        } else if (tutar > 0) {
+          ip.className = 'ipucu vurgulu';
+          ip.innerHTML = A.Tk(tutar) +
+            (kasa.ortKur > 0 ? ' ≈ ' + A.U(tutar / kasa.ortKur) : '') +
+            ' · ödeme sonrası kalan borç <b>' + A.T(Math.max(0, borc - tutar)) + '</b>';
+        } else {
+          ip.className = 'ipucu';
+          ip.innerHTML = borc > 0.5 ? 'Bu tüccara ' + A.T(borc) + ' borcun var.' : '';
+        }
+
+        // hangi partilerin borcu kapanacak
+        var d = el('odemeDagilim');
+        if (!t || tutar <= 0) { d.innerHTML = ''; return; }
+        var kalan = tutar, satirlar = [];
+        t.satirlar.forEach(function (x) {
+          var acik = x.borc - x.odenen + (k && k.satici === t.ad ? 0 : 0);
+          if (kalan <= 0.0001 || acik <= 0.0001) return;
+          var al = Math.min(kalan, acik);
+          satirlar.push('<div class="dagilim-satir">' +
+            '<span class="d-parti">' + kacir(x.kod) + '</span>' +
+            '<span class="d-kalite">' + A.tarihGoster(x.tarih) + '</span>' +
+            '<span class="d-kg">' + A.T(al) + '</span></div>');
+          kalan -= al;
+        });
+        d.innerHTML = satirlar.length
+          ? '<div class="kart" style="margin-top:10px"><div class="kart-ic">' +
+            '<div class="kucuk-yazi" style="margin-bottom:8px"><b>Hangi partinin borcu kapanacak</b>' +
+            ' — en eskiden başlayarak</div>' + satirlar.join('') +
+            (kalan > 0.5 ? '<div class="ipucu hata" style="margin-top:8px">' +
+              A.T(kalan) + ' karşılıksız kalıyor</div>' : '') +
+            '</div></div>'
+          : '';
+      }
+    });
+  }
+
+  /* ============================================================
      GENEL GİDER — seyahat ve işletme masrafları
 
      Otel, uçak bileti, yeme içme… Kasadan düşer ama hiçbir partinin
@@ -6125,7 +6382,8 @@ window.NOHUT_BULUT = {
   var FORMLAR = {
     transfer: formTransfer, parti: formParti, masraf: formMasraf,
     eleme: formEleme, altSatis: formAltSatis, sevkiyat: formSevkiyat,
-    giderler: formGiderler, hamSatis: formHamSatis, genelGider: formGenelGider
+    giderler: formGiderler, hamSatis: formHamSatis, genelGider: formGenelGider,
+    odeme: formOdeme
   };
 
   function ac(tur, param) {
@@ -6133,6 +6391,10 @@ window.NOHUT_BULUT = {
     if (!f) return;
     // param bir kayıt id'si mi yoksa "bu partiye ekle" mi?
     if (tur === 'giderler') return f(param);
+    if (tur === 'odeme') {
+      var kendi = param ? V.bul('odemeler', param) : null;
+      return kendi ? f(param) : f(null, param);       // param tüccar adı olabilir
+    }
     if ((tur === 'masraf' || tur === 'eleme' || tur === 'altSatis' || tur === 'hamSatis') && param) {
       var kol = { masraf: 'masraflar', eleme: 'elemeler',
                   altSatis: 'altSatislar', hamSatis: 'hamSatislar' }[tur];
