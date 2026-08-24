@@ -1455,23 +1455,35 @@ window.NOHUT_BULUT = {
     var girenUsd = 0, girenTumen = 0;
     var defter = [];
     var usdDegeri = {};    // "tur:id" -> USD tutarı
-    var sonKur = S((veri.ayarlar || {}).varsayilanKur); // kasa boşalırsa geri düşülecek kur
+    /* Kur nereden gelir:
+         1) O anda kasada para varsa: bakiye / USD karşılığı
+         2) Kasa boşalmış ya da EKSİYE düşmüşse: son bilinen kur
+            (program durmaz, hesaplamaya devam eder)
+         3) Henüz hiç transfer olmamışsa: kayıtlardaki İLK transferin
+            kuru (ileriye bakış). Alımı transferden önce tarihlemek
+            yaygın; bu olmadan maliyet 0 USD çıkıyordu.
+         4) Hiç transfer yoksa: ayarlardaki varsayılan kur           */
+    var ilkKur = 0;
+    tariheGore(dizi(veri.transferler)).some(function (t) {
+      if (S(t.usd) > 0 && S(t.tumen) > 0) { ilkKur = S(t.tumen) / S(t.usd); return true; }
+      return false;
+    });
+    var sonKur = ilkKur || S((veri.ayarlar || {}).varsayilanKur);
     var kursuzHarcama = false;
+    var eksiHarcama = false;
 
-    // Kasa sıfırlanınca (ya da eksiye düşünce) bakiye/usdKarşılık oranı
-    // anlamını yitirir; son bilinen geçerli kura geri düşeriz. Yoksa
-    // ayarlardaki varsayılan kur, o da yoksa 0 (arayüz uyarır).
     function ortKur() {
       if (usdKarsilik > 0 && bakiye > 0) {
         sonKur = bakiye / usdKarsilik;
         return sonKur;
       }
-      return sonKur;
+      return sonKur;   // eksi bakiyede son bilinen kurla devam
     }
 
     function cikis(tumen) {
       var kur = ortKur();
       if (!(kur > 0)) kursuzHarcama = true;
+      if (bakiye - tumen < 0) eksiHarcama = true;
       var usd = kur > 0 ? tumen / kur : 0;
       bakiye -= tumen;
       usdKarsilik -= usd;
@@ -1502,6 +1514,7 @@ window.NOHUT_BULUT = {
         var odenen = S(k.odenen);
         var kurP = ortKur();
         if (!(kurP > 0)) kursuzHarcama = true;
+        if (bakiye - odenen < 0) eksiHarcama = true;
         var odenenUsd = kurP > 0 ? odenen / kurP : 0;
         bakiye -= odenen;
         usdKarsilik -= odenenUsd;
@@ -1617,6 +1630,8 @@ window.NOHUT_BULUT = {
       usdKarsilik: usdKarsilik,
       ortKur: ortKur(),
       kursuzHarcama: kursuzHarcama,
+      eksiHarcama: eksiHarcama,
+      ilkKur: ilkKur,
       girenUsd: girenUsd,
       girenTumen: girenTumen,
       genelOrtKur: girenUsd > 0 ? girenTumen / girenUsd : 0,
@@ -3250,13 +3265,18 @@ window.NOHUT_BULUT = {
   function uyariSeridi(veri, kasa) {
     var u = [];
     if (kasa.kursuzHarcama) {
-      u.push({ kotu: true, b: 'Kur bilgisi eksik',
-        m: 'Bazı harcamalar, kasaya hiç döviz girmeden yapılmış görünüyor. USD karşılıkları hesaplanamadı. ' +
-           '<b data-form="transfer" style="color:var(--vurgu);cursor:pointer">Döviz transferi ekle →</b>' });
+      u.push({ kotu: true, b: 'Kur bilinmiyor — USD hesaplanamıyor',
+        m: 'Hiç döviz transferi kaydedilmemiş, bu yüzden Tümen tutarları dolara çevrilemiyor. ' +
+           'Tümen hesapları doğru çalışıyor. ' +
+           '<b data-form="transfer" style="color:var(--vurgu);cursor:pointer">Döviz transferi ekle →</b>' +
+           ' ya da <b data-git="ayarlar" style="color:var(--vurgu);cursor:pointer">varsayılan kur gir →</b>' });
     }
     if (kasa.bakiye < 0) {
-      u.push({ kotu: true, b: 'Kasa eksiye düşmüş',
-        m: 'Kasa bakiyesi ' + Tk(kasa.bakiye) + '. Muhtemelen kaydedilmemiş bir döviz transferi var.' });
+      u.push({ b: 'Kasa ekside: ' + Tk(kasa.bakiye),
+        m: 'Program çalışmaya devam ediyor; maliyet hesapları son bilinen kurla (' +
+           n0(kasa.ortKur) + ' T/USD) yapılıyor. Genelde sebebi kaydedilmemiş bir döviz ' +
+           'transferidir. ' +
+           '<b data-form="transfer" style="color:var(--vurgu);cursor:pointer">Transfer ekle →</b>' });
     }
     if (V.motor.ad === 'dosya' && !window.__yayinKurulu) {
       u.push({ b: 'Web kopyası henüz kurulmadı',
@@ -3302,8 +3322,11 @@ window.NOHUT_BULUT = {
 
     /* --- kasa --- */
     h += '<div class="kutular">' +
-      kutu('Kasa (Tümen)', Tk(kasa.bakiye),
-           kasa.bakiye > 0 ? '≈ ' + Uk(kasa.usdKarsilik) : 'boş') +
+      kutu('Kasa (Tümen)',
+           (kasa.bakiye < 0 ? '<span class="negatif">' + Tk(kasa.bakiye) + '</span>'
+                            : Tk(kasa.bakiye)),
+           kasa.bakiye < 0 ? 'ekside · ≈ ' + Uk(kasa.usdKarsilik)
+             : kasa.bakiye > 0 ? '≈ ' + Uk(kasa.usdKarsilik) : 'boş') +
       kutu('Ortalama kur', kasa.ortKur ? n0(kasa.ortKur) : '—',
            kasa.ortKur ? 'Tümen / 1 USD' : 'henüz transfer yok') +
       (function () {
@@ -3759,7 +3782,11 @@ window.NOHUT_BULUT = {
     var h = '<div class="sayfa">';
 
     h += '<div class="kutular">' +
-      kutu('Kasa bakiyesi', Tk(kasa.bakiye), kasa.bakiye ? '≈ ' + Uk(kasa.usdKarsilik) : 'boş', true) +
+      kutu('Kasa bakiyesi',
+           (kasa.bakiye < 0 ? '<span class="negatif">' + Tk(kasa.bakiye) + '</span>'
+                            : Tk(kasa.bakiye)),
+           kasa.bakiye < 0 ? 'ekside · ≈ ' + Uk(kasa.usdKarsilik)
+             : kasa.bakiye ? '≈ ' + Uk(kasa.usdKarsilik) : 'boş', true) +
       kutu('Ortalama kur', kasa.ortKur ? n0(kasa.ortKur) : '—', 'Tümen / 1 USD') +
       kutu('Toplam bozdurulan', Uk(kasa.girenUsd), Tk(kasa.girenTumen)) +
       '</div>';
@@ -4305,6 +4332,21 @@ window.NOHUT_BULUT = {
       }, 50);
     }
 
+    h += '<h2 class="bolum">Varsayılan kur</h2>';
+    h += '<div class="kart"><div class="kart-ic">' +
+      '<p class="kucuk-yazi" style="margin:0 0 10px">Yalnızca <b>hiç döviz transferi ' +
+      'kaydedilmemişken</b> kullanılır — Tümen tutarları dolara çevrilebilsin diye. ' +
+      'Transfer girdiğinde program gerçek kuru kullanır, bu değeri dikkate almaz.</p>' +
+      '<div class="onek"><input type="text" inputmode="decimal" id="varsayilanKur" ' +
+        'placeholder="örn. 500.000" value="' +
+        ((veri.ayarlar || {}).varsayilanKur ? n0(veri.ayarlar.varsayilanKur) : '') + '" ' +
+        'style="width:100%;padding:12px 40px 12px 13px;border:1px solid var(--cizgi);' +
+        'border-radius:11px;background:var(--kart2);color:var(--metin);font-size:16px;' +
+        'min-height:46px"><span class="birim">T/USD</span></div>' +
+      '<div class="bosluk"></div>' +
+      '<button class="dugme" data-eylem="kurKaydet">Kaydet</button>' +
+      '</div></div>';
+
     h += '<h2 class="bolum">Firma adı</h2>';
     h += '<div class="kart"><div class="kart-ic">' +
       '<p class="kucuk-yazi" style="margin:0 0 10px">PDF raporlarının üstünde görünür. ' +
@@ -4465,6 +4507,16 @@ window.NOHUT_BULUT = {
           setTimeout(function () { Git.ciz(); }, 6000);
         })
         .catch(function () { A.bildir('Bağlanılamadı'); });
+    },
+
+    kurKaydet: function () {
+      var veri = V.hepsi();
+      if (!veri.ayarlar) veri.ayarlar = {};
+      veri.ayarlar.varsayilanKur = A.sayiCoz((el('varsayilanKur') || {}).value || '');
+      V.kaydet();
+      A.bildir(veri.ayarlar.varsayilanKur > 0
+        ? 'Varsayılan kur kaydedildi' : 'Varsayılan kur kaldırıldı');
+      Git.ciz();
     },
 
     firmaKaydet: function () {
